@@ -292,6 +292,7 @@ fn generate_memory_impl() -> Result<(), Box<dyn std::error::Error>> {
     writeln!(
         &mut file,
         r#"
+#![allow(clippy::transmute_num_to_bytes)]
 use std::{{fmt, mem}};
 use std::ops::{{Deref, DerefMut}};
 
@@ -332,6 +333,7 @@ fn generate_vector_impl() -> Result<(), Box<dyn std::error::Error>> {
     writeln!(
         &mut file,
         r#"
+#![allow(clippy::transmute_num_to_bytes)]
 use std::{{fmt, mem, slice}};
 use std::ops::{{Deref, DerefMut, Index, IndexMut}};
 

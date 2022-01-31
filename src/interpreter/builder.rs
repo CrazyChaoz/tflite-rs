@@ -28,7 +28,7 @@ where
 {
     fn drop(&mut self) {
         let handle = Box::into_raw(std::mem::take(&mut self.handle));
-        #[allow(clippy::forgetting_copy_types, clippy::useless_transmute, deprecated)]
+        #[allow(clippy::forget_copy, clippy::useless_transmute, deprecated)]
         unsafe {
             cpp!([handle as "InterpreterBuilder*"] {
                 delete handle;
@@ -46,10 +46,10 @@ where
         use std::ops::Deref;
         let model = model.into();
         let handle = {
-            let model_handle = model.as_ref().handle.deref() as *const _;
-            let resolver_handle = resolver.get_resolver_handle() as *const _;
+            let model_handle = model.as_ref().handle.deref();
+            let resolver_handle = resolver.get_resolver_handle();
 
-            #[allow(clippy::forgetting_copy_types, deprecated)]
+            #[allow(clippy::forget_copy, deprecated)]
             unsafe {
                 cpp!([model_handle as "const FlatBufferModel*",
                     resolver_handle as "const OpResolver*"
@@ -66,9 +66,9 @@ where
     }
 
     pub fn build(mut self) -> Result<Interpreter<'a, Op>> {
-        #[allow(clippy::forgetting_copy_types, deprecated)]
+        #[allow(clippy::forget_copy, deprecated)]
         let handle = {
-            let builder = (&mut *self.handle) as *mut _;
+            let builder = &mut *self.handle;
             unsafe {
                 cpp!([builder as "InterpreterBuilder*"] -> *mut bindings::Interpreter as "Interpreter*" {
                     std::unique_ptr<Interpreter> interpreter;
@@ -87,9 +87,9 @@ where
         mut self,
         threads: std::os::raw::c_int,
     ) -> Result<Interpreter<'a, Op>> {
-        #[allow(clippy::forgetting_copy_types, deprecated)]
+        #[allow(clippy::forget_copy, deprecated)]
         let handle = {
-            let builder = (&mut *self.handle) as *mut _;
+            let builder = &mut *self.handle;
             #[allow(clippy::transmute_num_to_bytes)]
             unsafe {
                 cpp!([builder as "InterpreterBuilder*", threads as "int"] -> *mut bindings::Interpreter as "Interpreter*" {

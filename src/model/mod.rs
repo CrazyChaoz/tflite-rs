@@ -1,5 +1,4 @@
 #![allow(clippy::field_reassign_with_default)]
-#![allow(clippy::size_of_ref)]
 
 mod builtin_options;
 mod builtin_options_impl;
@@ -25,6 +24,7 @@ use crate::{Error, Result};
 pub use builtin_options::{
     BuiltinOptionsUnion, ConcatEmbeddingsOptionsT, ReshapeOptionsT, SqueezeOptionsT,
 };
+pub use builtin_options_impl::*;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -481,19 +481,19 @@ mod tests {
             println!("{:?}", subgraph.outputs);
 
             for operator in &subgraph.operators {
-                println!("{operator:?}");
+                println!("{:?}", operator);
             }
 
             for tensor in &subgraph.tensors {
-                println!("{tensor:?}");
+                println!("{:?}", tensor);
             }
 
             for buffer in &model.buffers {
-                println!("{buffer:?}");
+                println!("{:?}", buffer);
             }
 
             for operator_code in &model.operator_codes {
-                println!("{operator_code:?}");
+                println!("{:?}", operator_code);
             }
             model.to_buffer()
         };

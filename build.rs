@@ -70,14 +70,14 @@ fn prepare_tensorflow_library() {
         // so a cached version that doesn't match expectations isn't used
         let binary_changing_features = binary_changing_features();
         let tf_lib_name =
-            Path::new(&out_dir).join(format!("libtensorflow-lite{}.a", binary_changing_features,));
+            Path::new(&out_dir).join(format!("libtensorflow-lite{binary_changing_features}.a"));
         let os = env::var("CARGO_CFG_TARGET_OS").expect("Unable to get TARGET_OS");
         if !tf_lib_name.exists() {
             println!("Building tflite");
             let start = Instant::now();
             let mut make = std::process::Command::new("make");
             if let Ok(prefix) = env::var("TARGET_TOOLCHAIN_PREFIX") {
-                make.arg(format!("TARGET_TOOLCHAIN_PREFIX={}", prefix));
+                make.arg(format!("TARGET_TOOLCHAIN_PREFIX={prefix}"));
             } else {
                 let target_triple = env::var("TARGET").unwrap();
                 let host_triple = env::var("HOST").unwrap();
@@ -136,21 +136,21 @@ fn prepare_tensorflow_library() {
                 ("EXTRA_CFLAGS", None),
                 ("EXTRA_CXXFLAGS", None),
             ] {
-                let env_var = format!("TFLITE_RS_MAKE_{}", make_var);
-                println!("cargo:rerun-if-env-changed={}", env_var);
+                let env_var = format!("TFLITE_RS_MAKE_{make_var}");
+                println!("cargo:rerun-if-env-changed={env_var}");
 
                 match env::var(&env_var) {
                     Ok(result) => {
-                        make.arg(format!("{}={}", make_var, result));
+                        make.arg(format!("{make_var}={result}"));
                     }
                     Err(VarError::NotPresent) => {
                         // Try and set some reasonable default values
                         if let Some(result) = default {
-                            make.arg(format!("{}={}", make_var, result));
+                            make.arg(format!("{make_var}={result}"));
                         }
                     }
                     Err(VarError::NotUnicode(_)) => {
-                        panic!("Provided a non-unicode value for {}", env_var)
+                        panic!("Provided a non-unicode value for {env_var}")
                     }
                 }
             }
@@ -162,7 +162,7 @@ fn prepare_tensorflow_library() {
                 make.arg("micro");
             }
             make.current_dir(make_dir);
-            eprintln!("make command = {:?} in dir  {:?}", make, make_dir);
+            eprintln!("make command = {make:?} in dir  {make_dir:?}");
             if !make.status().expect("failed to run make command").success() {
                 panic!("Failed to build tensorflow");
             }
@@ -179,8 +179,8 @@ fn prepare_tensorflow_library() {
 
             println!("Building tflite from source took {:?}", start.elapsed());
         }
-        println!("cargo:rustc-link-search=native={}", out_dir);
-        println!("cargo:rustc-link-lib=static=tensorflow-lite{}", binary_changing_features);
+        println!("cargo:rustc-link-search=native={out_dir}");
+        println!("cargo:rustc-link-lib=static=tensorflow-lite{binary_changing_features}");
     }
     #[cfg(not(feature = "build"))]
     {
@@ -240,15 +240,16 @@ fn import_tflite_types() {
         .opaque_type("std::basic_string.*")
         .opaque_type("std::map.*")
         .opaque_type("flatbuffers::NativeTable")
-        .blacklist_type("std")
-        .blacklist_type("tflite::Interpreter_TfLiteDelegatePtr")
-        .blacklist_type("tflite::Interpreter_State")
+        .blocklist_type("std")
+        .blocklist_type("tflite::Interpreter_TfLiteDelegatePtr")
+        .blocklist_type("tflite::Interpreter_State")
         .default_enum_style(EnumVariation::Rust { non_exhaustive: false })
         .derive_partialeq(true)
         .derive_eq(true)
         .header("csrc/tflite_wrapper.hpp")
-        .clang_arg(format!("-I{}/tensorflow", submodules_str))
-        .clang_arg(format!("-I{}/downloads/flatbuffers/include", submodules_str))
+        .clang_arg(format!("-I{submodules_str}/tensorflow"))
+        .clang_arg(format!("-I{submodules_str}/downloads/flatbuffers/include"))
+        //.clang_arg("-DGEMMLOWP_ALLOW_SLOW_SCALAR_FALLBACK")
         .clang_arg("-DFLATBUFFERS_POLYMORPHIC_NATIVETABLE")
         .clang_arg("-x")
         .clang_arg("c++")
@@ -273,6 +274,7 @@ fn build_inline_cpp() {
         .flag("-fPIC")
         .flag("-std=c++14")
         .flag("-Wno-sign-compare")
+        //.define("GEMMLOWP_ALLOW_SLOW_SCALAR_FALLBACK", None)
         .define("FLATBUFFERS_POLYMORPHIC_NATIVETABLE", None)
         .debug(true)
         .opt_level(if cfg!(debug_assertions) { 0 } else { 2 })

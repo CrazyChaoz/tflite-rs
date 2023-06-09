@@ -7,7 +7,7 @@ keywords = ["tensorflow", "tflite", "bindings"]
 license = "MIT/Apache-2.0"
 repository = "https://github.com/boncheolgu/tflite-rs"
 readme = "README.md"
-edition = "2018"
+edition = "2021"
 documentation = "https://docs.rs/crate/tflite"
 
 # filter in only necessary files

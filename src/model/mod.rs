@@ -24,7 +24,6 @@ use crate::{Error, Result};
 pub use builtin_options::{
     BuiltinOptionsUnion, ConcatEmbeddingsOptionsT, ReshapeOptionsT, SqueezeOptionsT,
 };
-pub use builtin_options_impl::*;
 
 #[repr(C)]
 #[derive(Debug)]

@@ -26,7 +26,7 @@ impl Deref for UniquePtr<crate::model::OperatorCodeT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<OperatorCodeT>*"] -> *const crate::model::OperatorCodeT as "const OperatorCodeT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -39,7 +39,7 @@ impl DerefMut for UniquePtr<crate::model::OperatorCodeT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<OperatorCodeT>*"] -> *mut crate::model::OperatorCodeT as "OperatorCodeT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }
@@ -77,7 +77,7 @@ impl Deref for UniquePtr<crate::model::TensorT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<TensorT>*"] -> *const crate::model::TensorT as "const TensorT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -90,7 +90,7 @@ impl DerefMut for UniquePtr<crate::model::TensorT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<TensorT>*"] -> *mut crate::model::TensorT as "TensorT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }
@@ -128,7 +128,7 @@ impl Deref for UniquePtr<crate::model::OperatorT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<OperatorT>*"] -> *const crate::model::OperatorT as "const OperatorT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -141,7 +141,7 @@ impl DerefMut for UniquePtr<crate::model::OperatorT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<OperatorT>*"] -> *mut crate::model::OperatorT as "OperatorT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }
@@ -179,7 +179,7 @@ impl Deref for UniquePtr<crate::model::SubGraphT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<SubGraphT>*"] -> *const crate::model::SubGraphT as "const SubGraphT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -192,7 +192,7 @@ impl DerefMut for UniquePtr<crate::model::SubGraphT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<SubGraphT>*"] -> *mut crate::model::SubGraphT as "SubGraphT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }
@@ -230,7 +230,7 @@ impl Deref for UniquePtr<crate::model::BufferT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<BufferT>*"] -> *const crate::model::BufferT as "const BufferT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -243,7 +243,7 @@ impl DerefMut for UniquePtr<crate::model::BufferT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<BufferT>*"] -> *mut crate::model::BufferT as "BufferT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }
@@ -281,7 +281,7 @@ impl Deref for UniquePtr<crate::model::QuantizationParametersT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<QuantizationParametersT>*"] -> *const crate::model::QuantizationParametersT as "const QuantizationParametersT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -294,7 +294,7 @@ impl DerefMut for UniquePtr<crate::model::QuantizationParametersT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<QuantizationParametersT>*"] -> *mut crate::model::QuantizationParametersT as "QuantizationParametersT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }
@@ -332,7 +332,7 @@ impl Deref for UniquePtr<crate::model::ModelT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<ModelT>*"] -> *const crate::model::ModelT as "const ModelT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -345,7 +345,7 @@ impl DerefMut for UniquePtr<crate::model::ModelT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<ModelT>*"] -> *mut crate::model::ModelT as "ModelT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }
@@ -383,7 +383,7 @@ impl Deref for UniquePtr<crate::model::MetadataT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<MetadataT>*"] -> *const crate::model::MetadataT as "const MetadataT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -396,7 +396,7 @@ impl DerefMut for UniquePtr<crate::model::MetadataT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<MetadataT>*"] -> *mut crate::model::MetadataT as "MetadataT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }

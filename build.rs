@@ -212,7 +212,7 @@ fn import_tflite_types() {
     let submodules = submodules();
     let submodules_str = submodules.to_string_lossy();
     let bindings = Builder::default()
-        .whitelist_recursively(true)
+        .allowlist_recursively(true)
         .prepend_enum_name(false)
         .impl_debug(true)
         .with_codegen_config(CodegenConfig::TYPES)
@@ -221,21 +221,21 @@ fn import_tflite_types() {
         .derive_default(true)
         .size_t_is_usize(true)
         // for model APIs
-        .whitelist_type("tflite::ModelT")
-        .whitelist_type(".+OptionsT")
-        .blacklist_type(".+_TableType")
+        .allowlist_type("tflite::ModelT")
+        .allowlist_type(".+OptionsT")
+        .blocklist_type(".+_TableType")
         // for interpreter
-        .whitelist_type("tflite::FlatBufferModel")
+        .allowlist_type("tflite::FlatBufferModel")
         .opaque_type("tflite::FlatBufferModel")
-        .whitelist_type("tflite::InterpreterBuilder")
+        .allowlist_type("tflite::InterpreterBuilder")
         .opaque_type("tflite::InterpreterBuilder")
-        .whitelist_type("tflite::Interpreter")
+        .allowlist_type("tflite::Interpreter")
         .opaque_type("tflite::Interpreter")
-        .whitelist_type("tflite::ops::builtin::BuiltinOpResolver")
+        .allowlist_type("tflite::ops::builtin::BuiltinOpResolver")
         .opaque_type("tflite::ops::builtin::BuiltinOpResolver")
-        .whitelist_type("tflite::OpResolver")
+        .allowlist_type("tflite::OpResolver")
         .opaque_type("tflite::OpResolver")
-        .whitelist_type("TfLiteTensor")
+        .allowlist_type("TfLiteTensor")
         .opaque_type("std::string")
         .opaque_type("std::basic_string.*")
         .opaque_type("std::map.*")
@@ -248,12 +248,12 @@ fn import_tflite_types() {
         .derive_eq(true)
         .header("csrc/tflite_wrapper.hpp")
         .clang_arg(format!("-I{submodules_str}/tensorflow"))
-        .clang_arg(format!("-I{submodules_str}/downloads/flatbuffers/include"))
-        //.clang_arg("-DGEMMLOWP_ALLOW_SLOW_SCALAR_FALLBACK")
+        .clang_arg(format!("-I{submodules_str}/flatbuffers/include"))
+        .clang_arg("-DGEMMLOWP_ALLOW_SLOW_SCALAR_FALLBACK")
         .clang_arg("-DFLATBUFFERS_POLYMORPHIC_NATIVETABLE")
         .clang_arg("-x")
         .clang_arg("c++")
-        .clang_arg("-std=c++11")
+        .clang_arg("-std=c++17")
         // required to get cross compilation for aarch64 to work because of an issue in flatbuffers
         .clang_arg("-fms-extensions")
         .no_copy("_Tp");
@@ -262,7 +262,11 @@ fn import_tflite_types() {
 
     // Write the bindings to the $OUT_DIR/tflite_types.rs file.
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("tflite_types.rs");
-    let bindings = bindings.to_string().replace("pub _M_val: _Tp", "pub _M_val: std::mem::ManuallyDrop<_Tp>");
+    let bindings = bindings
+        .to_string()
+        .replace("pub _M_val: _Tp", "pub _M_val: std::mem::ManuallyDrop<_Tp>");
+        //.replace("_NodeHandle","_Node_handle<_NodeAlloc>");
+        // .replace("type _Rb_tree_insert_return_type","type _Rb_tree_insert_return_type<_Iterator,_NodeAlloc>");
     std::fs::write(out_path, bindings).expect("Couldn't write bindings!");
 }
 
@@ -271,11 +275,11 @@ fn build_inline_cpp() {
 
     cpp_build::Config::new()
         .include(submodules.join("tensorflow"))
-        .include(submodules.join("downloads/flatbuffers/include"))
+        .include(submodules.join("flatbuffers/include"))
         .flag("-fPIC")
-        .flag("-std=c++14")
+        .flag("-std=c++17")
         .flag("-Wno-sign-compare")
-        //.define("GEMMLOWP_ALLOW_SLOW_SCALAR_FALLBACK", None)
+        .define("GEMMLOWP_ALLOW_SLOW_SCALAR_FALLBACK", None)
         .define("FLATBUFFERS_POLYMORPHIC_NATIVETABLE", None)
         .debug(true)
         .opt_level(if cfg!(debug_assertions) { 0 } else { 2 })
@@ -287,18 +291,18 @@ fn import_stl_types() {
 
     let bindings = Builder::default()
         .enable_cxx_namespaces()
-        .whitelist_type("std::string")
+        .allowlist_type("std::string")
         .opaque_type("std::string")
-        .whitelist_type("rust::.+")
+        .allowlist_type("rust::.+")
         .opaque_type("rust::.+")
-        .blacklist_type("std")
+        .blocklist_type("std")
         .header("csrc/stl_wrapper.hpp")
         .layout_tests(false)
         .derive_partialeq(true)
         .derive_eq(true)
         .clang_arg("-x")
         .clang_arg("c++")
-        .clang_arg("-std=c++14")
+        .clang_arg("-std=c++17")
         .clang_arg("-fms-extensions")
         .rustfmt_bindings(false)
         .generate()

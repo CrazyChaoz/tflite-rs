@@ -37,7 +37,7 @@ where
     Op: OpResolver,
 {
     fn drop(&mut self) {
-        let handle = Box::into_raw(mem::take(&mut self.handle));
+        let handle = Box::into_raw(mem::replace(&mut self.handle,Box::new([0u64;65])));
         #[allow(clippy::forgetting_copy_types, clippy::useless_transmute, deprecated)]
         unsafe {
             cpp!([handle as "Interpreter*"] {

@@ -264,9 +264,10 @@ fn import_tflite_types() {
     let out_path = PathBuf::from(env::var("OUT_DIR").unwrap()).join("tflite_types.rs");
     let bindings = bindings
         .to_string()
-        .replace("pub _M_val: _Tp", "pub _M_val: std::mem::ManuallyDrop<_Tp>");
-        //.replace("_NodeHandle","_Node_handle<_NodeAlloc>");
-        // .replace("type _Rb_tree_insert_return_type","type _Rb_tree_insert_return_type<_Iterator,_NodeAlloc>");
+        .replace("pub _M_val: _Tp", "pub _M_val: std::mem::ManuallyDrop<_Tp>")
+        .replace("Vector_iterator","Vector_iterator<Data>")
+        .replace("Vector_reverse_iterator","Vector_reverse_iterator<Data>")
+        .replace("type _Rb_tree_insert_return_type","type _Rb_tree_insert_return_type<_Iterator,_NodeHandle>");
     std::fs::write(out_path, bindings).expect("Couldn't write bindings!");
 }
 

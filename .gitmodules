@@ -1,6 +1,8 @@
 [submodule "submodules/tensorflow"]
 	path = submodules/tensorflow
 	url = https://github.com/tensorflow/tensorflow.git
-[submodule "submodules/downloads"]
-	path = submodules/downloads
-	url = https://github.com/yotarok/tflite-rs-downloads
+    tag = v2.13.0
+[submodule "submodules/flatbuffers"]
+	path = submodules/flatbuffers
+	url = https://github.com/google/flatbuffers.git
+	tag = v23.1.21

@@ -1,4 +1,5 @@
 
+#![allow(clippy::transmute_num_to_bytes)]
 use std::{fmt, mem};
 use std::ops::{Deref, DerefMut};
 
@@ -434,7 +435,7 @@ impl Deref for UniquePtr<crate::model::TensorMapT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<TensorMapT>*"] -> *const crate::model::TensorMapT as "const TensorMapT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -447,7 +448,7 @@ impl DerefMut for UniquePtr<crate::model::TensorMapT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<TensorMapT>*"] -> *mut crate::model::TensorMapT as "TensorMapT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }
@@ -485,7 +486,7 @@ impl Deref for UniquePtr<crate::model::SignatureDefT> {
         unsafe {
             let ptr = cpp!([self as "const std::unique_ptr<SignatureDefT>*"] -> *const crate::model::SignatureDefT as "const SignatureDefT*" {
                 return self->get();
-            }) as *const Self::Target;
+            });
 
             ptr.as_ref().unwrap()
         }
@@ -498,7 +499,7 @@ impl DerefMut for UniquePtr<crate::model::SignatureDefT> {
         unsafe {
             let ptr = cpp!([self as "std::unique_ptr<SignatureDefT>*"] -> *mut crate::model::SignatureDefT as "SignatureDefT*" {
                 return self->get();
-            }) as *mut Self::Target;
+            });
 
             ptr.as_mut().unwrap()
         }

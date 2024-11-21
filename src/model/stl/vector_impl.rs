@@ -1,4 +1,5 @@
 
+#![allow(clippy::transmute_num_to_bytes)]
 use std::{fmt, mem, slice};
 use std::ops::{Deref, DerefMut, Index, IndexMut};
 

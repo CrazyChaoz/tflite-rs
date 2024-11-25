@@ -16,6 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v27
         with:
+          submodules: 'true'
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - run: nix build
 
@@ -26,5 +27,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v27
         with:
+          submodules: 'true'
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - run: nix build

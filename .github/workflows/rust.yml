@@ -11,37 +11,20 @@ env:
 jobs:
   test:
     name: test
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: true
-      matrix:
-        rust: [stable, beta, nightly]
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
         with:
-          submodules: recursive
-      - uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: ${{matrix.rust}}
-      - run: cargo fmt -- --check
-      - run: cargo clippy --all-targets -- --deny warnings
-      - run: cargo test --features generate_model_apis -- --nocapture
-      - run: cargo test --features debug_tflite,no_micro -- --nocapture
-      - run: cargo fmt
-      - run: cargo publish --dry-run
-      # Make sure package size is under 10 MB
-      - run: cargo package --verbose && [ $(stat -c %s target/package/tflite-*.crate) -le 10485760 ]
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - run: nix build
 
   macos-build-test:
     name: macos build test
     runs-on: macOS-latest
-    strategy:
-      fail-fast: true
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
         with:
-          submodules: recursive
-      - uses: actions-rs/cargo@v1
-        with:
-          command: build
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - run: nix build

@@ -5,6 +5,15 @@
 This crates provides TensorFlow Lite APIs.
 Please read the [`API documentation on docs.rs`](https://docs.rs/crate/tflite)
 
+# Compatibility
+
+This fork is only tested with 
+- a prebuilt `libtensorflowlite.so`
+- tensorflow `v2.13.0`
+- flatbuffers `v23.1.21`
+
+For a working example check out the nix devshell using `nix develop`
+
 ### Using the interpreter from a model file
 
 The following example shows how to use the TensorFlow Lite interpreter when provided a TensorFlow Lite FlatBuffer file.

@@ -19,7 +19,7 @@ jobs:
       - uses: cachix/install-nix-action@v27
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - run: nix build
+      - run: nix build  ".?submodules=1#"
 
   macos-build-test:
     name: macos build test
@@ -31,4 +31,5 @@ jobs:
       - uses: cachix/install-nix-action@v27
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
-      - run: nix build
+      - run: nix build ".?submodules=1#"
+

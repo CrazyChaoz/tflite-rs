@@ -1,11 +1,11 @@
 [package]
 name = "tflite"
 version = "0.9.9"
-authors = ["Boncheol Gu <boncheol.gu@gmail.com>"]
+authors = ["Boncheol Gu <boncheol.gu@gmail.com>", "Stefan Kempinger <kempinger@ins.jku.at>"]
 description = "Rust bindings for TensorFlow Lite"
 keywords = ["tensorflow", "tflite", "bindings"]
 license = "MIT/Apache-2.0"
-repository = "https://github.com/boncheolgu/tflite-rs"
+repository = "https://github.com/CrazyChaoz/tflite-rs"
 readme = "README.md"
 edition = "2021"
 documentation = "https://docs.rs/crate/tflite"
@@ -20,7 +20,7 @@ include = [
   "data/",
   "csrc/",
   "src/",
-  "submodules/downloads",
+  "submodules/flatbuffers",
   "submodules/tensorflow/tensorflow/lite/c",
   "submodules/tensorflow/tensorflow/lite/core",
   "submodules/tensorflow/tensorflow/lite/delegates/*.cc",

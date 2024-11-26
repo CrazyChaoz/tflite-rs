@@ -14,9 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
       - uses: cachix/install-nix-action@v27
         with:
-          submodules: 'true'
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - run: nix build
 
@@ -25,8 +26,9 @@ jobs:
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
       - uses: cachix/install-nix-action@v27
         with:
-          submodules: 'true'
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
       - run: nix build

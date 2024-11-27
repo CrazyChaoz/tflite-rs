@@ -1,4 +1,4 @@
-[![Rust](https://github.com/boncheolgu/tflite-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/CrazyChaoz/tflite-rs/actions/workflows/rust.yml)
+[![Rust](https://github.com/CrazyChaoz/tflite-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/CrazyChaoz/tflite-rs/actions/workflows/rust.yml)
 
 # Rust bindings for TensorFlow Lite
 

@@ -7,10 +7,11 @@ Please read the [`API documentation on docs.rs`](https://docs.rs/crate/tflite)
 
 # Compatibility
 
-This fork is only tested with 
-- a prebuilt `libtensorflowlite.so`
-- tensorflow `v2.13.0`
-- flatbuffers `v23.1.21`
+This fork is tested with 
+- tensorflow `v2.19.0`
+- flatbuffers `v24.3.25`
+
+I `build` by default, I have not tested it without.
 
 For a working example check out the nix devshell using `nix develop`
 

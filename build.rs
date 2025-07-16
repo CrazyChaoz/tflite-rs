@@ -72,9 +72,13 @@ fn prepare_tensorflow_library() {
         let tf_lib_name = cmake_build_dir.join("libtensorflow-lite.a");
         let binary_changing_features = binary_changing_features();
 
+        let target = env::var("TARGET").unwrap_or_else(|_| "native".to_string());
+        let is_cross_compile =
+            target != "native" && target != env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+
         if !tf_lib_name.exists() {
             std::fs::create_dir_all(&cmake_build_dir).expect("Unable to create cmake build dir");
-            // Configure with CMake
+
             let mut cmake_config = std::process::Command::new("cmake");
             cmake_config.arg(tf_src_dir.to_string_lossy().to_string());
             cmake_config.arg("-DCMAKE_BUILD_TYPE=Release");
@@ -85,20 +89,38 @@ fn prepare_tensorflow_library() {
             cmake_config.arg("-DFLATBUFFERS_INSTALL=OFF");
             cmake_config.arg("-DFLATBUFFERS_BUILD_TESTS=OFF");
             cmake_config.arg("-DBUILD_SHARED_LIBS=ON");
+
+            if is_cross_compile {
+                let toolchain_file = match target.as_str() {
+                    "aarch64" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/bin/aarch64-linux-gnu-",
+                    "armv7" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-",
+                    _ => panic!("Unsupported target architecture: {target}"),
+                };
+
+                cmake_config.arg("-DCMAKE_TOOLCHAIN_FILE=".to_string() + toolchain_file);
+                cmake_config.arg("-DCMAKE_SYSTEM_NAME=Linux");
+                cmake_config.arg(format!("-DCMAKE_SYSTEM_PROCESSOR={target}"));
+            }
+
             cmake_config.current_dir(&cmake_build_dir);
-            assert!(cmake_config.status().expect("Failed to run cmake configure").success(), "CMake configuration failed");
-            // Build with CMake, limit parallel jobs
+            assert!(
+                cmake_config.status().expect("Failed to run cmake configure").success(),
+                "CMake configuration failed"
+            );
+
             let mut cmake_build = std::process::Command::new("cmake");
             cmake_build.arg("--build");
             cmake_build.arg(".");
-            // Use NUM_JOBS from Cargo if available, else default to 8
             let num_jobs =
                 std::env::var("NUM_JOBS").ok().and_then(|s| s.parse::<u32>().ok()).unwrap_or(8);
             cmake_build.arg(format!("-j{num_jobs}"));
             cmake_build.current_dir(&cmake_build_dir);
-            assert!(cmake_build.status().expect("Failed to run cmake build").success(), "CMake build failed");
+            assert!(
+                cmake_build.status().expect("Failed to run cmake build").success(),
+                "CMake build failed"
+            );
         }
-        // Link the built library
+
         println!("cargo:rustc-link-search=native={cmake_build_dir_str}");
         println!("cargo:rustc-link-lib=static=tensorflow-lite{binary_changing_features}");
     }

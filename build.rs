@@ -3,10 +3,7 @@
 extern crate bart_derive;
 
 use std::env;
-use std::env::VarError;
 use std::path::{Path, PathBuf};
-#[cfg(feature = "build")]
-use std::time::Instant;
 
 fn manifest_dir() -> PathBuf {
     PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
@@ -14,38 +11,6 @@ fn manifest_dir() -> PathBuf {
 
 fn submodules() -> PathBuf {
     manifest_dir().join("submodules")
-}
-
-#[cfg(feature = "build")]
-fn prepare_tensorflow_source() -> PathBuf {
-    println!("Moving tflite source");
-    let start = Instant::now();
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let tf_src_dir = out_dir.join("tensorflow/tensorflow");
-    let submodules = submodules();
-
-    let mut copy_dir = fs_extra::dir::CopyOptions::new();
-    copy_dir.overwrite = true;
-    copy_dir.buffer_size = 65536;
-
-    if !tf_src_dir.exists() {
-        fs_extra::dir::copy(submodules.join("tensorflow"), &out_dir, &copy_dir)
-            .expect("Unable to copy tensorflow");
-    }
-
-    let download_dir = tf_src_dir.join("lite/tools/make/downloads");
-    if !download_dir.exists() {
-        fs_extra::dir::copy(
-            submodules.join("downloads"),
-            download_dir.parent().unwrap(),
-            &copy_dir,
-        )
-        .expect("Unable to copy download dir");
-    }
-
-    println!("Moving source took {:?}", start.elapsed());
-
-    tf_src_dir
 }
 
 fn binary_changing_features() -> String {

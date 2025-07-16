@@ -94,11 +94,11 @@ fn prepare_tensorflow_library() {
                 let toolchain_file = match target.as_str() {
                     "aarch64" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/bin/aarch64-linux-gnu-",
                     "armv7" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-",
+                    "aarch64-apple-darwin" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-aarch64-apple-darwin/bin/aarch64-apple-darwin-",
                     _ => panic!("Unsupported target architecture: {target}"),
                 };
 
                 cmake_config.arg("-DCMAKE_TOOLCHAIN_FILE=".to_string() + toolchain_file);
-                cmake_config.arg("-DCMAKE_SYSTEM_NAME=Linux");
                 cmake_config.arg(format!("-DCMAKE_SYSTEM_PROCESSOR={target}"));
             }
 
@@ -149,7 +149,7 @@ fn prepare_tensorflow_library() {
 
 // This generates "tflite_types.rs" containing structs and enums which are inter-operable with Glow.
 fn import_tflite_types() {
-    use bindgen::*;
+    use bindgen::{Builder, CodegenConfig, EnumVariation};
 
     let submodules = submodules();
     let submodules_str = submodules.to_string_lossy();

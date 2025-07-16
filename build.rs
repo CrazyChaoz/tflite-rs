@@ -37,9 +37,9 @@ fn prepare_tensorflow_library() {
         let tf_lib_name = cmake_build_dir.join("libtensorflow-lite.a");
         let binary_changing_features = binary_changing_features();
 
-        let target = env::var("TARGET").unwrap_or_else(|_| "native".to_string());
-        let is_cross_compile =
-            target != "native" && target != env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
+        // let target = env::var("TARGET").unwrap_or_else(|_| "native".to_string());
+        // let is_cross_compile =
+        //     target != "native" && target != env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
 
         if !tf_lib_name.exists() {
             std::fs::create_dir_all(&cmake_build_dir).expect("Unable to create cmake build dir");
@@ -55,17 +55,17 @@ fn prepare_tensorflow_library() {
             cmake_config.arg("-DFLATBUFFERS_BUILD_TESTS=OFF");
             cmake_config.arg("-DBUILD_SHARED_LIBS=ON");
 
-            if is_cross_compile {
-                let toolchain_file = match target.as_str() {
-                    "aarch64" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/bin/aarch64-linux-gnu-",
-                    "armv7" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-",
-                    "aarch64-apple-darwin" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-aarch64-apple-darwin/bin/aarch64-apple-darwin-",
-                    _ => panic!("Unsupported target architecture: {target}"),
-                };
+            // if is_cross_compile {
+            //     let toolchain_file = match target.as_str() {
+            //         "aarch64" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/bin/aarch64-linux-gnu-",
+            //         "armv7" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-",
+            //         "aarch64-apple-darwin" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-aarch64-apple-darwin/bin/aarch64-apple-darwin-",
+            //         _ => panic!("Unsupported target architecture: {target}"),
+            //     };
 
-                cmake_config.arg("-DCMAKE_TOOLCHAIN_FILE=".to_string() + toolchain_file);
-                cmake_config.arg(format!("-DCMAKE_SYSTEM_PROCESSOR={target}"));
-            }
+            //     cmake_config.arg("-DCMAKE_TOOLCHAIN_FILE=".to_string() + toolchain_file);
+            //     cmake_config.arg(format!("-DCMAKE_SYSTEM_PROCESSOR={target}"));
+            // }
 
             cmake_config.current_dir(&cmake_build_dir);
             assert!(

@@ -233,7 +233,7 @@ fn generate_memory_impl() -> Result<(), Box<dyn std::error::Error>> {
     writeln!(
         &mut file,
         r#"
-#![allow(clippy::transmute_num_to_bytes)]
+#![allow(clippy::unnecessary_transmutes)]
 use std::{{fmt, mem}};
 use std::ops::{{Deref, DerefMut}};
 

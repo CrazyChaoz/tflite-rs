@@ -1,7 +1,10 @@
 [package]
 name = "tflite"
 version = "0.9.9"
-authors = ["Boncheol Gu <boncheol.gu@gmail.com>", "Stefan Kempinger <kempinger@ins.jku.at>"]
+authors = [
+  "Boncheol Gu <boncheol.gu@gmail.com>",
+  "Stefan Kempinger <kempinger@ins.jku.at>",
+]
 description = "Rust bindings for TensorFlow Lite"
 keywords = ["tensorflow", "tflite", "bindings"]
 license = "MIT/Apache-2.0"
@@ -62,8 +65,8 @@ fs_extra = { version = "1.2.0", optional = true }
 [features]
 build = ["fs_extra"]
 default = ["build"]
-debug_tflite = ["build"]                      # use "libtensorflow-lite.a" built in debug mode
-generate_model_apis = ["bart", "bart_derive"]
+debug_tflite = ["build"]                               # use "libtensorflow-lite.a" built in debug mode
+generate_model_apis = ["build", "bart", "bart_derive"]
 no_micro = ["build"]
 
 [package.metadata.docs.rs]

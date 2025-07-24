@@ -18,15 +18,14 @@
       let
         pkgs = import nixpkgs { inherit system; };
 
-        renamed_tflite = customPkgs:  customPkgs.clangStdenv.mkDerivation {
-          name = "renamed_tflite";
-          src = customPkgs.tensorflow-lite;
-          buildPhase = ''
+
+        renamed_tflite = customPkgs: customPkgs.runCommand "renamed-tflite" {} 
+          ''
             mkdir $out/
             mkdir $out/lib/
 
             # Copy everything
-            cp -r $src/* $out/
+            cp -r ${customPkgs.tensorflow-lite}/* $out/
 
             # Rename specific files in lib/
             if [ -d $out/lib ]; then
@@ -40,8 +39,8 @@
                 cp $out/lib/libtensorflowlite.so $out/lib/libtensorflow-lite.so
               fi
             fi
-          '';
-        };
+          ''
+        ;
 
         buildMyRustThingy = customPkgs: (crane.mkLib customPkgs).buildPackage {
           src = ./.;
@@ -67,9 +66,6 @@
         packages.default = buildMyRustThingy pkgs;
 
         packages.aarch64-linux = buildMyRustThingy pkgs.pkgsCross.aarch64-multiplatform;
-
-        packages.x86_64-linux = buildMyRustThingy pkgs.pkgsCross.x86_64-linux;
-
 
         devShell = pkgs.mkShell {
           TFLITE_X86_64_LIB_DIR = "${renamed_tflite}/lib";

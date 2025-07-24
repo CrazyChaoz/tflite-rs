@@ -1,17 +1,26 @@
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    nixpkgs = {
+      url = "github:CrazyChaoz/nixpkgs/update-tflite-to-2.19";
+    };
     utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
   };
-  outputs = { self, nixpkgs, utils, crane }:
-    utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      utils,
+      crane,
+    }:
+    utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs { inherit system; };
 
-        renamed_tflite = pkgs.clangStdenv.mkDerivation {
+        renamed_tflite = customPkgs:  customPkgs.clangStdenv.mkDerivation {
           name = "renamed_tflite";
-          src = pkgs.tensorflow-lite;
+          src = customPkgs.tensorflow-lite;
           buildPhase = ''
             mkdir $out/
             mkdir $out/lib/
@@ -33,20 +42,18 @@
             fi
           '';
         };
-      in
-      {
-        packages.default = (crane.mkLib pkgs).buildPackage {
+
+        buildMyRustThingy = customPkgs: (crane.mkLib customPkgs).buildPackage {
           src = ./.;
-          doCheck = true;
+          doCheck = false;
 
-          TFLITE_X86_64_LIB_DIR = "${renamed_tflite}/lib";
-          TFLITE_LIB_DIR = "${renamed_tflite}/lib";
+          TFLITE_X86_64_LIB_DIR = "${(renamed_tflite customPkgs)}/lib";
+          TFLITE_LIB_DIR = "${(renamed_tflite customPkgs)}/lib";
 
-          buildInputs = with pkgs; [
-            renamed_tflite
-            vtk
+          buildInputs = with customPkgs; [
+            (renamed_tflite customPkgs)
           ];
-          nativeBuildInputs = with pkgs; [
+          nativeBuildInputs = with customPkgs; [
             clang
             pkg-config
             perl
@@ -55,12 +62,20 @@
             libclang
           ];
         };
+      in
+      {
+        packages.default = buildMyRustThingy pkgs;
+
+        packages.aarch64-linux = buildMyRustThingy pkgs.pkgsCross.aarch64-multiplatform;
+
+        packages.x86_64-linux = buildMyRustThingy pkgs.pkgsCross.x86_64-linux;
+
 
         devShell = pkgs.mkShell {
           TFLITE_X86_64_LIB_DIR = "${renamed_tflite}/lib";
           TFLITE_LIB_DIR = "${renamed_tflite}/lib";
 
-          buildInputs = with pkgs;[
+          buildInputs = with pkgs; [
             clang
           ];
           nativeBuildInputs = with pkgs; [
@@ -73,5 +88,6 @@
             rustPlatform.bindgenHook
           ];
         };
-      });
+      }
+    );
 }

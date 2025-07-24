@@ -17,17 +17,18 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1732014248,
-        "narHash": "sha256-y/MEyuJ5oBWrWAic/14LaIr/u5E0wRVzyYsouYY3W6w=",
-        "owner": "NixOS",
+        "lastModified": 1753271858,
+        "narHash": "sha256-bD3/hV93h+Uquw6+HmQVFJ7JKWS566xP2pmi7aagSQI=",
+        "owner": "CrazyChaoz",
         "repo": "nixpkgs",
-        "rev": "23e89b7da85c3640bbc2173fe04f4bd114342367",
+        "rev": "9cc8810e8eccc9e4dd1f0f325de819b893fde342",
         "type": "github"
       },
       "original": {
-        "id": "nixpkgs",
-        "ref": "nixos-unstable",
-        "type": "indirect"
+        "owner": "CrazyChaoz",
+        "ref": "update-tflite-to-2.19",
+        "repo": "nixpkgs",
+        "type": "github"
       }
     },
     "root": {

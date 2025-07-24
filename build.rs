@@ -29,19 +29,21 @@ fn prepare_tensorflow_library() {
 
     #[cfg(feature = "build")]
     {
-        let out_dir = env::var("OUT_DIR").unwrap();
         let submodules = submodules();
         let tf_src_dir = submodules.join("tensorflow/tensorflow/lite");
-        let cmake_build_dir = Path::new(&out_dir).join("tflite_cmake_build");
+        let cmake_build_dir = Path::new("tflite_cmake_build");
         let cmake_build_dir_str = cmake_build_dir.to_string_lossy();
-        let tf_lib_name = cmake_build_dir.join("libtensorflow-lite.a");
+        // append tf_lib_name with features that can change how it is built
+        // so a cached version that doesn't match expectations isn't used
         let binary_changing_features = binary_changing_features();
-
-        // let target = env::var("TARGET").unwrap_or_else(|_| "native".to_string());
-        // let is_cross_compile =
-        //     target != "native" && target != env::var("CARGO_CFG_TARGET_ARCH").unwrap_or_default();
-
+        let tf_lib_name = Path::new(&cmake_build_dir)
+            .join(format!("libtensorflow-lite{}.a", binary_changing_features,));
+        let os = env::var("CARGO_CFG_TARGET_OS").expect("Unable to get TARGET_OS");
         if !tf_lib_name.exists() {
+            use std::time::Instant;
+
+            println!("Building tflite");
+            let start = Instant::now();
             std::fs::create_dir_all(&cmake_build_dir).expect("Unable to create cmake build dir");
 
             let mut cmake_config = std::process::Command::new("cmake");
@@ -52,20 +54,10 @@ fn prepare_tensorflow_library() {
             cmake_config.arg("-DFLATBUFFERS_BUILD_FLATHASH=OFF");
             cmake_config.arg("-DFLATBUFFERS_BUILD_GRPC=OFF");
             cmake_config.arg("-DFLATBUFFERS_INSTALL=OFF");
-            cmake_config.arg("-DFLATBUFFERS_BUILD_TESTS=OFF");
-            cmake_config.arg("-DBUILD_SHARED_LIBS=ON");
-
-            // if is_cross_compile {
-            //     let toolchain_file = match target.as_str() {
-            //         "aarch64" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-aarch64-linux-gnu/bin/aarch64-linux-gnu-",
-            //         "armv7" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-arm-linux-gnueabihf/bin/arm-linux-gnueabihf-",
-            //         "aarch64-apple-darwin" => "${HOME}/toolchains/gcc-arm-8.3-2019.03-x86_64-aarch64-apple-darwin/bin/aarch64-apple-darwin-",
-            //         _ => panic!("Unsupported target architecture: {target}"),
-            //     };
-
-            //     cmake_config.arg("-DCMAKE_TOOLCHAIN_FILE=".to_string() + toolchain_file);
-            //     cmake_config.arg(format!("-DCMAKE_SYSTEM_PROCESSOR={target}"));
-            // }
+            cmake_config.arg("-DFLATBUFFERS_BUILD_TESTS=ON");
+            cmake_config.arg("-DTFLITE_ENABLE_RUY=ON");
+            cmake_config.arg("-DTFLITE_ENABLE_XNNPACK=ON");
+            cmake_config.arg("-DBUILD_SHARED_LIBS=OFF");
 
             cmake_config.current_dir(&cmake_build_dir);
             assert!(
@@ -84,6 +76,18 @@ fn prepare_tensorflow_library() {
                 cmake_build.status().expect("Failed to run cmake build").success(),
                 "CMake build failed"
             );
+
+            // find library
+            let library = std::fs::read_dir(cmake_build_dir)
+                .expect("Make gen file should exist")
+                .filter_map(|de| Some(de.ok()?.path().join("libtensorflow-lite.a")))
+                .find(|p| p.exists())
+                .expect("Unable to find libtensorflow-lite.a");
+            std::fs::copy(library, &tf_lib_name).unwrap_or_else(|_| {
+                panic!("Unable to copy libtensorflow-lite.a to {}", tf_lib_name.display())
+            });
+
+            println!("Building tflite from source took {:?}", start.elapsed());
         }
 
         println!("cargo:rustc-link-search=native={cmake_build_dir_str}");
@@ -91,7 +95,7 @@ fn prepare_tensorflow_library() {
     }
     #[cfg(not(feature = "build"))]
     {
-        let arch_var = format!("TFLITE_{}_LIB_DIR", arch.replace("-", "_").to_uppercase());
+        let arch_var = format!("TFLITE_{}_LIB_DIR", _arch.replace("-", "_").to_uppercase());
         let all_var = "TFLITE_LIB_DIR".to_string();
         let lib_dir = env::var(&arch_var).or(env::var(&all_var)).unwrap_or_else(|_| {
             panic!(
@@ -110,6 +114,10 @@ fn prepare_tensorflow_library() {
     }
     println!("cargo:rustc-link-lib=dylib=pthread");
     println!("cargo:rustc-link-lib=dylib=dl");
+    // println!(
+    //     "cargo:rustc-link-lib=dylib={}",
+    //     Path::new("./tflite_cmake_build").join("libxnnpack-delegate.a").to_string_lossy()
+    // );
 }
 
 // This generates "tflite_types.rs" containing structs and enums which are inter-operable with Glow.
@@ -198,7 +206,7 @@ fn build_inline_cpp() {
 }
 
 fn import_stl_types() {
-    use bindgen::*;
+    use bindgen::Builder;
 
     let bindings = Builder::default()
         .enable_cxx_namespaces()

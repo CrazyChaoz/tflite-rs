@@ -3,10 +3,12 @@
 extern crate bart_derive;
 
 use std::env;
-use std::env::VarError;
+// use std::env::VarError; // legacy make feature no longer used
 use std::path::{Path, PathBuf};
 #[cfg(feature = "build")]
 use std::time::Instant;
+#[cfg(feature = "build")]
+use std::process::Command;
 
 fn manifest_dir() -> PathBuf {
     PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
@@ -16,36 +18,107 @@ fn submodules() -> PathBuf {
     manifest_dir().join("submodules")
 }
 
+// Legacy make-based TensorFlow Lite build removed in favour of CMake.
+// We now drive a CMake build directly from the TensorFlow submodule.
 #[cfg(feature = "build")]
-fn prepare_tensorflow_source() -> PathBuf {
-    println!("Moving tflite source");
+#[allow(clippy::too_many_lines)]
+fn cmake_build_tensorflow() -> PathBuf {
     let start = Instant::now();
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let tf_src_dir = out_dir.join("tensorflow/tensorflow");
-    let submodules = submodules();
+    let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
+    let build_dir = out_dir.join("tflite_cmake_build");
+    let tf_lite_src = submodules().join("tensorflow/tensorflow/lite");
+    std::fs::create_dir_all(&build_dir).expect("Unable to create CMake build dir");
 
-    let mut copy_dir = fs_extra::dir::CopyOptions::new();
-    copy_dir.overwrite = true;
-    copy_dir.buffer_size = 65536;
+    // Determine build type (Debug / Release)
+    let build_type = if cfg!(feature = "debug_tflite") || cfg!(debug_assertions) {
+        "Debug"
+    } else {
+        "Release"
+    };
 
-    if !tf_src_dir.exists() {
-        fs_extra::dir::copy(submodules.join("tensorflow"), &out_dir, &copy_dir)
-            .expect("Unable to copy tensorflow");
+    // Only reconfigure if cache missing.
+    // (Re)configure if no cache or no generated build files (e.g. prior failed attempt)
+    let needs_configure = !build_dir.join("CMakeCache.txt").exists()
+        || (!build_dir.join("Makefile").exists()
+            && !build_dir.join("build.ninja").exists());
+    if needs_configure {
+        println!("Configuring TensorFlow Lite with CMake ({build_type})");
+        let mut cfg = Command::new("cmake");
+        cfg.current_dir(&build_dir);
+        if let Ok(gen) = env::var("TFLITE_RS_CMAKE_GENERATOR") {
+            if !gen.is_empty() { cfg.arg("-G").arg(gen); }
+            println!("cargo:rerun-if-env-changed=TFLITE_RS_CMAKE_GENERATOR");
+        }
+        // Removed mut + unnecessary String allocations.
+        let major = "2";
+        let minor = "20";
+        let patch = "0";
+        //TF_MAJOR=2 TF_MINOR=20 TF_PATCH=0
+
+        let defines = format!(
+            "-DTF_MAJOR_VERSION={major} -DTF_MINOR_VERSION={minor} -DTF_PATCH_VERSION={patch} -DTF_VERSION_SUFFIX=''"
+        );
+        cfg.arg(format!("-DCMAKE_CXX_FLAGS={defines}"));
+        cfg.arg(format!("-DCMAKE_C_FLAGS={defines}"));
+        cfg.arg(&tf_lite_src)
+            .arg(format!("-DCMAKE_BUILD_TYPE={build_type}"))
+            .arg("-DCMAKE_POLICY_VERSION_MINIMUM=3.5");
+
+        // Allow providing a toolchain file: TFLITE_RS_CMAKE_TOOLCHAIN_FILE
+        if let Ok(toolchain) = env::var("TFLITE_RS_CMAKE_TOOLCHAIN_FILE") {
+            if !toolchain.is_empty() {
+                cfg.arg(format!("-DCMAKE_TOOLCHAIN_FILE={toolchain}"));
+                println!("cargo:rerun-if-env-changed=TFLITE_RS_CMAKE_TOOLCHAIN_FILE");
+            }
+        }             
+
+
+        // Pass through any -D variables via env prefixed TFLITE_RS_CMAKE_<NAME>
+        for (k, v) in env::vars() {
+            if let Some(raw) = k.strip_prefix("TFLITE_RS_CMAKE_") {
+                if raw == "TOOLCHAIN_FILE" { continue; }
+                // Skip empty values.
+                if v.is_empty() { continue; }
+                cfg.arg(format!("-D{raw}={v}"));
+                println!("cargo:rerun-if-env-changed={k}");
+            }
+        }
+
+        // Common toggles can be overridden via the env mechanism above.
+        // Provide some gentle defaults if user did not set them.
+        // (Don't force them if user supplied an override.)
+        // Example defaults: enable XNNPACK (already ON by default), keep RUY OFF on non-Android.
+
+        // Provide a default unless caller already provided override via env (we can't introspect args easily)
+        // Users can override with TFLITE_RS_CMAKE_TFLITE_ENABLE_XNNPACK=OFF
+        if env::var("TFLITE_RS_CMAKE_TFLITE_ENABLE_XNNPACK").is_err() {
+            cfg.arg("-DTFLITE_ENABLE_XNNPACK=ON");
+        }
+
+    let status = cfg.status().expect("Failed to run cmake configuration for TensorFlow Lite");
+    assert!(status.success(), "CMake configuration for TensorFlow Lite failed");
+    }    
+    
+    // Build step.
+    println!("Building TensorFlow Lite (cmake --build)");
+    let mut build_cmd = Command::new("cmake");
+    build_cmd.current_dir(&build_dir);
+    build_cmd.arg("--build").arg(".");
+
+    // Respect job server / explicit parallelism environment variables.
+    // TFLITE_RS_CMAKE_PARALLELISM takes precedence, else fall back to NUM_JOBS provided by cargo.
+    if let Ok(j) = env::var("TFLITE_RS_CMAKE_PARALLELISM") {
+        if !j.is_empty() { build_cmd.arg("-j").arg(j); }
+        println!("cargo:rerun-if-env-changed=TFLITE_RS_CMAKE_PARALLELISM");
+    } else if let Ok(j) = env::var("NUM_JOBS") { // cargo sets this
+        build_cmd.arg("-j").arg(j);
     }
 
-    let download_dir = tf_src_dir.join("lite/tools/make/downloads");
-    if !download_dir.exists() {
-        fs_extra::dir::copy(
-            submodules.join("downloads"),
-            download_dir.parent().unwrap(),
-            &copy_dir,
-        )
-        .expect("Unable to copy download dir");
-    }
+    let status = build_cmd.status().expect("Failed to build TensorFlow Lite with CMake");
+    assert!(status.success(), "CMake build for TensorFlow Lite failed");
 
-    println!("Moving source took {:?}", start.elapsed());
-
-    tf_src_dir
+    println!("CMake build completed in {:?}", start.elapsed());
+    build_dir
 }
 
 fn binary_changing_features() -> String {
@@ -61,145 +134,59 @@ fn binary_changing_features() -> String {
 
 fn prepare_tensorflow_library() {
     let arch = env::var("CARGO_CFG_TARGET_ARCH").expect("Unable to get TARGET_ARCH");
+    let arch_var = format!("TFLITE_{}_LIB_DIR", arch.replace('-', "_").to_uppercase());
+    let all_var = "TFLITE_LIB_DIR".to_string();
 
-    #[cfg(feature = "build")]
-    {
-        let tflite = prepare_tensorflow_source();
-        let out_dir = env::var("OUT_DIR").unwrap();
-        // append tf_lib_name with features that can change how it is built
-        // so a cached version that doesn't match expectations isn't used
-        let binary_changing_features = binary_changing_features();
-        let tf_lib_name =
-            Path::new(&out_dir).join(format!("libtensorflow-lite{binary_changing_features}.a"));
-        let os = env::var("CARGO_CFG_TARGET_OS").expect("Unable to get TARGET_OS");
-        if !tf_lib_name.exists() {
-            println!("Building tflite");
-            let start = Instant::now();
-            let mut make = std::process::Command::new("make");
-            if let Ok(prefix) = env::var("TARGET_TOOLCHAIN_PREFIX") {
-                make.arg(format!("TARGET_TOOLCHAIN_PREFIX={prefix}"));
-            } else {
-                let target_triple = env::var("TARGET").unwrap();
-                let host_triple = env::var("HOST").unwrap();
-                let kind = if host_triple == target_triple { "HOST" } else { "TARGET" };
-                let target_u = target_triple.replace('-', "_");
-                for name in ["CC", "CXX", "AR", "CFLAGS", "CXXFLAGS", "ARFLAGS"] {
-                    if let Ok(value) = env::var(&format!("{name}_{target_triple}"))
-                        .or_else(|_| env::var(format!("{name}_{target_u}")))
-                        .or_else(|_| env::var(format!("{kind}_{name}")))
-                        .or_else(|_| env::var(name))
-                    {
-                        make.arg(format!("{name}={value}"));
-                        println!("inherited: {name}={value}")
-                    }
-                }
-            }
-
-            // Use cargo's cross-compilation information while building tensorflow
-            // Now that tensorflow has an aarch64_makefile.inc use theirs
-            let target = if &arch == "aarch64" { &arch } else { &os };
-
-            #[cfg(feature = "debug_tflite")]
-            {
-                println!("Feature debug_tflite enabled. Changing optimization to 0");
-                let makefile = tflite.join("lite/tools/make/Makefile");
-                let makefile_contents =
-                    std::fs::read_to_string(&makefile).expect("Unable to read Makefile");
-                let replaced = makefile_contents.replace("-O3", "-Og -g").replace("-DNDEBUG", "");
-                std::fs::write(&makefile, &replaced).expect("Unable to write Makefile");
-                if !replaced.contains("-Og") {
-                    panic!("Unable to change optimization settings");
-                }
-            }
-
-            let make_dir = tflite.parent().unwrap();
-
-            // allow parallelism to be overridden...
-            let num_jobs = env::var("TFLITE_RS_MAKE_PARALLELISM").ok().or_else(|| {
-                // but prefer jobserver if not explicitly given
-                if !env::var("MAKEFLAGS").unwrap_or_default().contains("--jobserver") {
-                    env::var("NUM_JOBS").ok()
-                } else {
-                    None
-                }
-            });
-            if let Some(num_jobs) = num_jobs {
-                make.arg("-j").arg(num_jobs);
-            }
-
-            make.arg("BUILD_WITH_NNAPI=false").arg("-f").arg("tensorflow/lite/tools/make/Makefile");
-
-            for (make_var, default) in &[
-                ("TARGET", Some(target.as_str())),
-                ("TARGET_ARCH", Some(arch.as_str())),
-                ("TARGET_TOOLCHAIN_PREFIX", None),
-                ("EXTRA_CFLAGS", None),
-                ("EXTRA_CXXFLAGS", None),
-            ] {
-                let env_var = format!("TFLITE_RS_MAKE_{make_var}");
-                println!("cargo:rerun-if-env-changed={env_var}");
-
-                match env::var(&env_var) {
-                    Ok(result) => {
-                        make.arg(format!("{make_var}={result}"));
-                    }
-                    Err(VarError::NotPresent) => {
-                        // Try and set some reasonable default values
-                        if let Some(result) = default {
-                            make.arg(format!("{make_var}={result}"));
-                        }
-                    }
-                    Err(VarError::NotUnicode(_)) => {
-                        panic!("Provided a non-unicode value for {env_var}")
-                    }
-                }
-            }
-
-            if cfg!(feature = "no_micro") {
-                println!("Building lib but no micro");
-                make.arg("lib");
-            } else {
-                make.arg("micro");
-            }
-            make.current_dir(make_dir);
-            eprintln!("make command = {make:?} in dir  {make_dir:?}");
-            if !make.status().expect("failed to run make command").success() {
-                panic!("Failed to build tensorflow");
-            }
-
-            // find library
-            let library = std::fs::read_dir(tflite.join("lite/tools/make/gen"))
-                .expect("Make gen file should exist")
-                .filter_map(|de| Some(de.ok()?.path().join("lib/libtensorflow-lite.a")))
-                .find(|p| p.exists())
-                .expect("Unable to find libtensorflow-lite.a");
-            std::fs::copy(library, &tf_lib_name).unwrap_or_else(|_| {
-                panic!("Unable to copy libtensorflow-lite.a to {}", tf_lib_name.display())
-            });
-
-            println!("Building tflite from source took {:?}", start.elapsed());
-        }
-        println!("cargo:rustc-link-search=native={out_dir}");
-        println!("cargo:rustc-link-lib=static=tensorflow-lite{binary_changing_features}");
-    }
-    #[cfg(not(feature = "build"))]
-    {
-        let arch_var = format!("TFLITE_{}_LIB_DIR", arch.replace("-", "_").to_uppercase());
-        let all_var = "TFLITE_LIB_DIR".to_string();
-        let lib_dir = env::var(&arch_var).or(env::var(&all_var)).unwrap_or_else(|_| {
-            panic!(
-                "[feature = build] not set and environment variables {} and {} are not set",
-                arch_var, all_var
-            )
-        });
-        println!("cargo:rustc-link-search=native={}", lib_dir);
+    // If user supplies prebuilt location, use it. Else build via CMake.
+    let supplied_lib_dir = env::var(&arch_var).ok().or_else(|| env::var(&all_var).ok());
+    if let Some(lib_dir) = supplied_lib_dir {
+        println!("cargo:rustc-link-search=native={lib_dir}");
         let static_dynamic = if Path::new(&lib_dir).join("libtensorflow-lite.a").exists() {
             "static"
-        } else {
-            "dylib"
-        };
-        println!("cargo:rustc-link-lib={}=tensorflow-lite", static_dynamic);
-        println!("cargo:rerun-if-changed={}", lib_dir);
+        } else { "dylib" };
+        println!("cargo:rustc-link-lib={static_dynamic}=tensorflow-lite");
+        println!("cargo:rerun-if-changed={lib_dir}");
+    } else {
+        let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+        let binary_changing_features = binary_changing_features();
+        let desired_lib_name = format!("libtensorflow-lite{binary_changing_features}.a");
+        let final_lib = out_dir.join(&desired_lib_name);
+        if !final_lib.exists() {
+            let build_dir = cmake_build_tensorflow();
+            // Locate built primary lib
+            let candidates = [
+                build_dir.join("libtensorflow-lite.a"),
+                build_dir.join("libtensorflow-lite.so"),
+                build_dir.join("libtensorflow-lite.dylib"),
+            ];
+            let built = candidates.iter().find(|p| p.exists()).cloned()
+                .unwrap_or_else(|| panic!("Unable to find built TensorFlow Lite library in {}", build_dir.display()));
+            std::fs::copy(&built, &final_lib).unwrap_or_else(|e| panic!("Copy library failed: {e}"));
+
+            // Also emit link directives for dependency static libs in build dir (best-effort)
+            if let Ok(entries) = std::fs::read_dir(&build_dir) {
+                for e in entries.flatten() {
+                    let path = e.path();
+                    if !path.is_file() { continue; }
+                    let Some(name) = path.file_name().and_then(|n| n.to_str()) else { continue };
+                    if !name.starts_with("lib") { continue; }
+                    if name == desired_lib_name { continue; }
+                    if name.starts_with("libtensorflow-lite") { continue; }
+                    if let Some(stripped) = name.strip_prefix("lib") {
+                        if let Some(libname) = stripped.strip_suffix(".a") {
+                            println!("cargo:rustc-link-lib=static={libname}");
+                        } else if let Some(libname) = stripped.strip_suffix(".so") {
+                            println!("cargo:rustc-link-lib=dylib={libname}");
+                        } else if let Some(libname) = stripped.strip_suffix(".dylib") {
+                            println!("cargo:rustc-link-lib=dylib={libname}");
+                        }
+                    }
+                }
+                println!("cargo:rustc-link-search=native={}", build_dir.display());
+            }
+        }
+        println!("cargo:rustc-link-search=native={}", out_dir.display());
+        println!("cargo:rustc-link-lib=static=tensorflow-lite{binary_changing_features}");
     }
     println!("cargo:rustc-link-lib=dylib=pthread");
     println!("cargo:rustc-link-lib=dylib=dl");

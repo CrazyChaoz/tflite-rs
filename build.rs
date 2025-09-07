@@ -66,6 +66,9 @@ fn cmake_build_tensorflow() -> PathBuf {
         
         #[cfg(feature="gpu")]
         cfg.arg("-DTFLITE_ENABLE_GPU=ON");
+        
+        cfg.arg(format!("-Druy_DIR={build_dir:?}/ruy"));
+        cfg.arg(format!("-Dxnnpack_DIR={build_dir:?}/xnnpack"));
 
         // Allow providing a toolchain file: TFLITE_RS_CMAKE_TOOLCHAIN_FILE
         if let Ok(toolchain) = env::var("TFLITE_RS_CMAKE_TOOLCHAIN_FILE") {

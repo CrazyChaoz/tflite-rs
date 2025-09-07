@@ -68,18 +68,18 @@ fn cmake_build_tensorflow() -> PathBuf {
         cfg.arg("-DTFLITE_ENABLE_GPU=ON");
         
         cfg.arg(format!("-DTFLITE_ENABLE_INSTALL=ON"));
-        //cfg.arg(format!("-DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON "));
-        cfg.arg(format!("-Dfarmhash_DIR={build_dir:?}/farmhash"));
-        cfg.arg(format!("-Dpthreadpool_DIR={build_dir:?}/pthreadpool"));
-        cfg.arg(format!("-Dabsl_DIR={build_dir:?}/abseil-cpp"));
-        cfg.arg(format!("-DEigen3_DIR={build_dir:?}/eigen"));
-        cfg.arg(format!("-DFlatBuffers_DIR={build_dir:?}/flatbuffers"));
-        cfg.arg(format!("-Dgemmlowp_DIR={build_dir:?}/gemmlowp"));
-        cfg.arg(format!("-DNEON_2_SSE_DIR={build_dir:?}/neon2sse"));
-        cfg.arg(format!("-Dcpuinfo_DIR={build_dir:?}/cpuinfo"));
-        cfg.arg(format!("-Dcpuinfo_DIR={build_dir:?}/cpuinfo"));
-        cfg.arg(format!("-Druy_DIR={build_dir:?}/ruy"));
-        cfg.arg(format!("-Dxnnpack_DIR={build_dir:?}/xnnpack"));     
+        cfg.arg(format!("-DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON "));
+        // cfg.arg(format!("-Dfarmhash_DIR={build_dir:?}/farmhash"));
+        // cfg.arg(format!("-Dpthreadpool_DIR={build_dir:?}/pthreadpool"));
+        // cfg.arg(format!("-Dabsl_DIR={build_dir:?}/abseil-cpp"));
+        // cfg.arg(format!("-DEigen3_DIR={build_dir:?}/eigen"));
+        // cfg.arg(format!("-DFlatBuffers_DIR={build_dir:?}/flatbuffers"));
+        // cfg.arg(format!("-Dgemmlowp_DIR={build_dir:?}/gemmlowp"));
+        // cfg.arg(format!("-DNEON_2_SSE_DIR={build_dir:?}/neon2sse"));
+        // cfg.arg(format!("-Dcpuinfo_DIR={build_dir:?}/cpuinfo"));
+        // cfg.arg(format!("-Dcpuinfo_DIR={build_dir:?}/cpuinfo"));
+        // cfg.arg(format!("-Druy_DIR={build_dir:?}/ruy"));
+        // cfg.arg(format!("-Dxnnpack_DIR={build_dir:?}/xnnpack"));     
 
         // Allow providing a toolchain file: TFLITE_RS_CMAKE_TOOLCHAIN_FILE
         if let Ok(toolchain) = env::var("TFLITE_RS_CMAKE_TOOLCHAIN_FILE") {

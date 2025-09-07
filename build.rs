@@ -67,8 +67,19 @@ fn cmake_build_tensorflow() -> PathBuf {
         #[cfg(feature="gpu")]
         cfg.arg("-DTFLITE_ENABLE_GPU=ON");
         
+        cfg.arg(format!("-DTFLITE_ENABLE_INSTALL=ON"));
+        cfg.arg(format!("-DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON "));
+        cfg.arg(format!("-DSYSTEM_FARMHASH=ON"));
+        cfg.arg(format!("-DSYSTEM_PTHREADPOOL=ON"));
+        cfg.arg(format!("-Dabsl_DIR={build_dir:?}/abseil-cpp"));
+        cfg.arg(format!("-DEigen3_DIR={build_dir:?}/eigen"));
+        cfg.arg(format!("-DFlatBuffers_DIR={build_dir:?}/flatbuffers"));
+        cfg.arg(format!("-Dgemmlowp_DIR={build_dir:?}/gemmlowp"));
+        cfg.arg(format!("-DNEON_2_SSE_DIR={build_dir:?}/neon2sse"));
+        cfg.arg(format!("-Dcpuinfo_DIR={build_dir:?}/cpuinfo"));
+        cfg.arg(format!("-Dcpuinfo_DIR={build_dir:?}/cpuinfo"));
         cfg.arg(format!("-Druy_DIR={build_dir:?}/ruy"));
-        cfg.arg(format!("-Dxnnpack_DIR={build_dir:?}/xnnpack"));
+        cfg.arg(format!("-Dxnnpack_DIR={build_dir:?}/xnnpack"));     
 
         // Allow providing a toolchain file: TFLITE_RS_CMAKE_TOOLCHAIN_FILE
         if let Ok(toolchain) = env::var("TFLITE_RS_CMAKE_TOOLCHAIN_FILE") {

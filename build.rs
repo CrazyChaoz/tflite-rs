@@ -63,6 +63,9 @@ fn cmake_build_tensorflow() -> PathBuf {
         cfg.arg(&tf_lite_src)
             .arg(format!("-DCMAKE_BUILD_TYPE={build_type}"))
             .arg("-DCMAKE_POLICY_VERSION_MINIMUM=3.5");
+        
+        #[cfg(feature="gpu")]
+        cfg.arg("-DTFLITE_ENABLE_GPU=ON");
 
         // Allow providing a toolchain file: TFLITE_RS_CMAKE_TOOLCHAIN_FILE
         if let Ok(toolchain) = env::var("TFLITE_RS_CMAKE_TOOLCHAIN_FILE") {

@@ -65,6 +65,7 @@ default = []
 debug_tflite = ["build"]                      # use "libtensorflow-lite.a" built in debug mode
 generate_model_apis = ["bart", "bart_derive"]
 no_micro = ["build"]
+gpu = []
 
 [package.metadata.docs.rs]
 all-features = false

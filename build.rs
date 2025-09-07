@@ -69,8 +69,8 @@ fn cmake_build_tensorflow() -> PathBuf {
         
         cfg.arg(format!("-DTFLITE_ENABLE_INSTALL=ON"));
         cfg.arg(format!("-DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON "));
-        cfg.arg(format!("-DSYSTEM_FARMHASH=ON"));
-        cfg.arg(format!("-DSYSTEM_PTHREADPOOL=ON"));
+        cfg.arg(format!("-Dfarmhash_DIR={build_dir:?}/farmhash"));
+        cfg.arg(format!("-Dpthreadpool_DIR={build_dir:?}/pthreadpool"));
         cfg.arg(format!("-Dabsl_DIR={build_dir:?}/abseil-cpp"));
         cfg.arg(format!("-DEigen3_DIR={build_dir:?}/eigen"));
         cfg.arg(format!("-DFlatBuffers_DIR={build_dir:?}/flatbuffers"));

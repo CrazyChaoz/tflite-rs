@@ -6,9 +6,9 @@ use std::env;
 // use std::env::VarError; // legacy make feature no longer used
 use std::path::{Path, PathBuf};
 #[cfg(feature = "build")]
-use std::time::Instant;
-#[cfg(feature = "build")]
 use std::process::Command;
+#[cfg(feature = "build")]
+use std::time::Instant;
 
 fn manifest_dir() -> PathBuf {
     PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
@@ -30,23 +30,21 @@ fn cmake_build_tensorflow() -> PathBuf {
     std::fs::create_dir_all(&build_dir).expect("Unable to create CMake build dir");
 
     // Determine build type (Debug / Release)
-    let build_type = if cfg!(feature = "debug_tflite") || cfg!(debug_assertions) {
-        "Debug"
-    } else {
-        "Release"
-    };
+    let build_type =
+        if cfg!(feature = "debug_tflite") || cfg!(debug_assertions) { "Debug" } else { "Release" };
 
     // Only reconfigure if cache missing.
     // (Re)configure if no cache or no generated build files (e.g. prior failed attempt)
     let needs_configure = !build_dir.join("CMakeCache.txt").exists()
-        || (!build_dir.join("Makefile").exists()
-            && !build_dir.join("build.ninja").exists());
+        || (!build_dir.join("Makefile").exists() && !build_dir.join("build.ninja").exists());
     if needs_configure {
         println!("Configuring TensorFlow Lite with CMake ({build_type})");
         let mut cfg = Command::new("cmake");
         cfg.current_dir(&build_dir);
         if let Ok(gen) = env::var("TFLITE_RS_CMAKE_GENERATOR") {
-            if !gen.is_empty() { cfg.arg("-G").arg(gen); }
+            if !gen.is_empty() {
+                cfg.arg("-G").arg(gen);
+            }
             println!("cargo:rerun-if-env-changed=TFLITE_RS_CMAKE_GENERATOR");
         }
         // Removed mut + unnecessary String allocations.
@@ -63,11 +61,11 @@ fn cmake_build_tensorflow() -> PathBuf {
         cfg.arg(&tf_lite_src)
             .arg(format!("-DCMAKE_BUILD_TYPE={build_type}"))
             .arg("-DCMAKE_POLICY_VERSION_MINIMUM=3.5");
-        
-        #[cfg(feature="gpu")]
+
+        #[cfg(feature = "gpu")]
         cfg.arg("-DTFLITE_ENABLE_GPU=ON");
-        
-        cfg.arg(format!("-DTFLITE_ENABLE_INSTALL=ON"));
+
+        cfg.arg(format!("-DTFLITE_ENABLE_INSTALL=OFF"));
         cfg.arg(format!("-DCMAKE_FIND_PACKAGE_PREFER_CONFIG=ON "));
         // cfg.arg(format!("-Dfarmhash_DIR={build_dir:?}/farmhash"));
         // cfg.arg(format!("-Dpthreadpool_DIR={build_dir:?}/pthreadpool"));
@@ -79,7 +77,7 @@ fn cmake_build_tensorflow() -> PathBuf {
         // cfg.arg(format!("-Dcpuinfo_DIR={build_dir:?}/cpuinfo"));
         // cfg.arg(format!("-Dcpuinfo_DIR={build_dir:?}/cpuinfo"));
         // cfg.arg(format!("-Druy_DIR={build_dir:?}/ruy"));
-        // cfg.arg(format!("-Dxnnpack_DIR={build_dir:?}/xnnpack"));     
+        // cfg.arg(format!("-Dxnnpack_DIR={build_dir:?}/xnnpack"));
 
         // Allow providing a toolchain file: TFLITE_RS_CMAKE_TOOLCHAIN_FILE
         if let Ok(toolchain) = env::var("TFLITE_RS_CMAKE_TOOLCHAIN_FILE") {
@@ -87,15 +85,18 @@ fn cmake_build_tensorflow() -> PathBuf {
                 cfg.arg(format!("-DCMAKE_TOOLCHAIN_FILE={toolchain}"));
                 println!("cargo:rerun-if-env-changed=TFLITE_RS_CMAKE_TOOLCHAIN_FILE");
             }
-        }             
-
+        }
 
         // Pass through any -D variables via env prefixed TFLITE_RS_CMAKE_<NAME>
         for (k, v) in env::vars() {
             if let Some(raw) = k.strip_prefix("TFLITE_RS_CMAKE_") {
-                if raw == "TOOLCHAIN_FILE" { continue; }
+                if raw == "TOOLCHAIN_FILE" {
+                    continue;
+                }
                 // Skip empty values.
-                if v.is_empty() { continue; }
+                if v.is_empty() {
+                    continue;
+                }
                 cfg.arg(format!("-D{raw}={v}"));
                 println!("cargo:rerun-if-env-changed={k}");
             }
@@ -112,10 +113,10 @@ fn cmake_build_tensorflow() -> PathBuf {
             cfg.arg("-DTFLITE_ENABLE_XNNPACK=ON");
         }
 
-    let status = cfg.status().expect("Failed to run cmake configuration for TensorFlow Lite");
-    assert!(status.success(), "CMake configuration for TensorFlow Lite failed");
-    }    
-    
+        let status = cfg.status().expect("Failed to run cmake configuration for TensorFlow Lite");
+        assert!(status.success(), "CMake configuration for TensorFlow Lite failed");
+    }
+
     // Build step.
     println!("Building TensorFlow Lite (cmake --build)");
     let mut build_cmd = Command::new("cmake");
@@ -125,9 +126,12 @@ fn cmake_build_tensorflow() -> PathBuf {
     // Respect job server / explicit parallelism environment variables.
     // TFLITE_RS_CMAKE_PARALLELISM takes precedence, else fall back to NUM_JOBS provided by cargo.
     if let Ok(j) = env::var("TFLITE_RS_CMAKE_PARALLELISM") {
-        if !j.is_empty() { build_cmd.arg("-j").arg(j); }
+        if !j.is_empty() {
+            build_cmd.arg("-j").arg(j);
+        }
         println!("cargo:rerun-if-env-changed=TFLITE_RS_CMAKE_PARALLELISM");
-    } else if let Ok(j) = env::var("NUM_JOBS") { // cargo sets this
+    } else if let Ok(j) = env::var("NUM_JOBS") {
+        // cargo sets this
         build_cmd.arg("-j").arg(j);
     }
 
@@ -160,7 +164,9 @@ fn prepare_tensorflow_library() {
         println!("cargo:rustc-link-search=native={lib_dir}");
         let static_dynamic = if Path::new(&lib_dir).join("libtensorflow-lite.a").exists() {
             "static"
-        } else { "dylib" };
+        } else {
+            "dylib"
+        };
         println!("cargo:rustc-link-lib={static_dynamic}=tensorflow-lite");
         println!("cargo:rerun-if-changed={lib_dir}");
     } else {
@@ -176,19 +182,29 @@ fn prepare_tensorflow_library() {
                 build_dir.join("libtensorflow-lite.so"),
                 build_dir.join("libtensorflow-lite.dylib"),
             ];
-            let built = candidates.iter().find(|p| p.exists()).cloned()
-                .unwrap_or_else(|| panic!("Unable to find built TensorFlow Lite library in {}", build_dir.display()));
-            std::fs::copy(&built, &final_lib).unwrap_or_else(|e| panic!("Copy library failed: {e}"));
+            let built = candidates.iter().find(|p| p.exists()).cloned().unwrap_or_else(|| {
+                panic!("Unable to find built TensorFlow Lite library in {}", build_dir.display())
+            });
+            std::fs::copy(&built, &final_lib)
+                .unwrap_or_else(|e| panic!("Copy library failed: {e}"));
 
             // Also emit link directives for dependency static libs in build dir (best-effort)
             if let Ok(entries) = std::fs::read_dir(&build_dir) {
                 for e in entries.flatten() {
                     let path = e.path();
-                    if !path.is_file() { continue; }
+                    if !path.is_file() {
+                        continue;
+                    }
                     let Some(name) = path.file_name().and_then(|n| n.to_str()) else { continue };
-                    if !name.starts_with("lib") { continue; }
-                    if name == desired_lib_name { continue; }
-                    if name.starts_with("libtensorflow-lite") { continue; }
+                    if !name.starts_with("lib") {
+                        continue;
+                    }
+                    if name == desired_lib_name {
+                        continue;
+                    }
+                    if name.starts_with("libtensorflow-lite") {
+                        continue;
+                    }
                     if let Some(stripped) = name.strip_prefix("lib") {
                         if let Some(libname) = stripped.strip_suffix(".a") {
                             println!("cargo:rustc-link-lib=static={libname}");
@@ -269,9 +285,12 @@ fn import_tflite_types() {
     let bindings = bindings
         .to_string()
         .replace("pub _M_val: _Tp", "pub _M_val: std::mem::ManuallyDrop<_Tp>")
-        .replace("Vector_iterator","Vector_iterator<Data>")
-        .replace("Vector_reverse_iterator","Vector_reverse_iterator<Data>")
-        .replace("type _Rb_tree_insert_return_type","type _Rb_tree_insert_return_type<_Iterator,_NodeHandle>");
+        .replace("Vector_iterator", "Vector_iterator<Data>")
+        .replace("Vector_reverse_iterator", "Vector_reverse_iterator<Data>")
+        .replace(
+            "type _Rb_tree_insert_return_type",
+            "type _Rb_tree_insert_return_type<_Iterator,_NodeHandle>",
+        );
     std::fs::write(out_path, bindings).expect("Couldn't write bindings!");
 }
 

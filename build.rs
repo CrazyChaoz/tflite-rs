@@ -256,26 +256,21 @@ fn prepare_tensorflow_library() {
     let arch_var = format!("TFLITE_{}_LIB_DIR", arch.replace('-', "_").to_uppercase());
     let all_var = "TFLITE_LIB_DIR".to_string();
 
-    // If user supplies prebuilt location, use it. Else build via CMake.
+    // If user supplies prebuilt location, use it. Else build via bazel/cmake.
     let supplied_lib_dir = env::var(&arch_var).ok().or_else(|| env::var(&all_var).ok());
 
     let mut lib_dir: Option<String> = None;
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap_or("tflite_build_directory".into()));
 
-    #[cfg(not(feature = "build"))]
-    {
-        use std::format;
+    // If the user supplied a lib dir, prefer it unconditionally (whether `build` feature is enabled or not).
+    if let Some(supplied) = supplied_lib_dir.clone() {
+        let src = PathBuf::from(supplied.clone())
+            .canonicalize()
+            .expect(&format!(
+                "Unable to canoncalize supplied TensorFlow Lite lib dir {supplied:?}"
+            ));
+        lib_dir = Some(src.as_os_str().to_string_lossy().to_string());
 
-        lib_dir = Some(
-            PathBuf::from(supplied_lib_dir.clone().expect("No valid path supplied").clone())
-                .canonicalize()
-                .expect(&format!(
-                    "Unable to canoncalize supplied TensorFlow Lite lib dir {supplied_lib_dir:?}"
-                ))
-                .as_os_str()
-                .to_string_lossy()
-                .to_string(),
-        );
         // Copy any .so and .a files from the supplied lib_dir to out_dir
         let src = PathBuf::from(lib_dir.clone().expect("lib_dir should be set"));
         let dst = out_dir.clone();
@@ -334,101 +329,109 @@ fn prepare_tensorflow_library() {
         }
 
         println!("cargo:rerun-if-changed={lib_dir:?}");
-    }
-    #[cfg(feature = "build")]
-    {
-        let binary_changing_features = binary_changing_features();
-        let desired_lib_name = format!("libtensorflow-lite{binary_changing_features}.so");
-        let final_lib = out_dir.join(&desired_lib_name);
-        if !final_lib.exists() {
-            println!("Building tflite");
-            let start = Instant::now();
-            let bazel = true;
+    } else {
+        // No user-supplied lib dir: if `build` feature is enabled, build as before.
+        #[cfg(feature = "build")]
+        {
+            let binary_changing_features = binary_changing_features();
+            let desired_lib_name = format!("libtensorflow-lite{binary_changing_features}.so");
+            let final_lib = out_dir.join(&desired_lib_name);
+            if !final_lib.exists() {
+                println!("Building tflite");
+                let start = Instant::now();
+                let bazel = true;
 
-            let build_dir = if bazel { bazel_build_tensorflow() } else { cmake_build_tensorflow() };
-            // let build_dir = cmake_build_tensorflow();
-            lib_dir = Some(build_dir.clone().to_str().unwrap().to_string());
-            // Locate built primary lib
-            let candidates: Vec<PathBuf> = if !bazel {
-                vec![
-                    build_dir.join("libtensorflow-lite.a"),
-                    build_dir.join("libtensorflow-lite.so"),
-                    build_dir.join("libtensorflow-lite.dylib"),
-                ]
-            } else {
-                vec![build_dir.join("libtensorflowlite.so")]
-            };
-
-            let built = candidates.iter().find(|p| p.exists()).cloned().unwrap_or_else(|| {
-                panic!("Unable to find built TensorFlow Lite library in {}", build_dir.display())
-            });
-            std::fs::copy(&built, &final_lib)
-                .unwrap_or_else(|e| panic!("Copy library failed: {e}"));
-
-            println!("Building tflite from source took {:?}", start.elapsed());
-
-            // Also copy any other relevant files from the build dir to out_dir
-            // (these are dependencies we need to link against)
-            // Recursively search the build dir for .so, .dylib and .a files and copy them to out_dir.
-            // Skip the primary library we've already copied (final_lib).
-            let mut stack = vec![build_dir.clone()];
-            while let Some(dir) = stack.pop() {
-                let entries = match std::fs::read_dir(&dir) {
-                    Ok(e) => e,
-                    Err(_) => continue,
+                let build_dir = if bazel { bazel_build_tensorflow() } else { cmake_build_tensorflow() };
+                // let build_dir = cmake_build_tensorflow();
+                lib_dir = Some(build_dir.clone().to_str().unwrap().to_string());
+                // Locate built primary lib
+                let candidates: Vec<PathBuf> = if !bazel {
+                    vec![
+                        build_dir.join("libtensorflow-lite.a"),
+                        build_dir.join("libtensorflow-lite.so"),
+                        build_dir.join("libtensorflow-lite.dylib"),
+                    ]
+                } else {
+                    vec![build_dir.join("libtensorflowlite.so")]
                 };
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if path.is_dir() {
-                        stack.push(path);
-                        continue;
-                    }
-                    if let Some(fname) = path.file_name().and_then(|s| s.to_str()) {
-                        let fname = fname.to_string();
-                        let lower = fname.to_lowercase();
-                        if !(lower.ends_with(".so")
-                            || lower.ends_with(".a")
-                            || lower.ends_with(".dylib"))
-                        {
+
+                let built = candidates.iter().find(|p| p.exists()).cloned().unwrap_or_else(|| {
+                    panic!("Unable to find built TensorFlow Lite library in {}", build_dir.display())
+                });
+                std::fs::copy(&built, &final_lib)
+                    .unwrap_or_else(|e| panic!("Copy library failed: {e}"));
+
+                println!("Building tflite from source took {:?}", start.elapsed());
+
+                // Also copy any other relevant files from the build dir to out_dir
+                // (these are dependencies we need to link against)
+                // Recursively search the build dir for .so, .dylib and .a files and copy them to out_dir.
+                // Skip the primary library we've already copied (final_lib).
+                let mut stack = vec![build_dir.clone()];
+                while let Some(dir) = stack.pop() {
+                    let entries = match std::fs::read_dir(&dir) {
+                        Ok(e) => e,
+                        Err(_) => continue,
+                    };
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.is_dir() {
+                            stack.push(path);
                             continue;
                         }
-                        let dest = out_dir.join(&fname);
-                        // Skip copying the final primary library we already created.
-                        if dest == final_lib {
-                            continue;
-                        }
-                        // Create destination dir if needed.
-                        if let Some(parent) = dest.parent() {
-                            if let Err(e) = std::fs::create_dir_all(parent) {
-                                panic!(
-                                    "Unable to create out_dir parent {}: {}",
-                                    parent.display(),
-                                    e
-                                );
+                        if let Some(fname) = path.file_name().and_then(|s| s.to_str()) {
+                            let fname = fname.to_string();
+                            let lower = fname.to_lowercase();
+                            if !(lower.ends_with(".so")
+                                || lower.ends_with(".a")
+                                || lower.ends_with(".dylib"))
+                            {
+                                continue;
                             }
-                        }
-                        // Copy, overwriting if already present.
-                        match std::fs::copy(&path, &dest) {
-                            Ok(_) => {
-                                println!("Copied {} -> {}", path.display(), dest.display());
-                                // Let cargo know to rerun if the source changes.
-                                println!("cargo:rerun-if-changed={}", path.display());
+                            let dest = out_dir.join(&fname);
+                            // Skip copying the final primary library we already created.
+                            if dest == final_lib {
+                                continue;
                             }
-                            Err(e) => {
-                                println!(
-                                    "Failed to copy {} to {}: {}",
-                                    path.display(),
-                                    dest.display(),
-                                    e
-                                );
+                            // Create destination dir if needed.
+                            if let Some(parent) = dest.parent() {
+                                if let Err(e) = std::fs::create_dir_all(parent) {
+                                    panic!(
+                                        "Unable to create out_dir parent {}: {}",
+                                        parent.display(),
+                                        e
+                                    );
+                                }
+                            }
+                            // Copy, overwriting if already present.
+                            match std::fs::copy(&path, &dest) {
+                                Ok(_) => {
+                                    println!("Copied {} -> {}", path.display(), dest.display());
+                                    // Let cargo know to rerun if the source changes.
+                                    println!("cargo:rerun-if-changed={}", path.display());
+                                }
+                                Err(e) => {
+                                    println!(
+                                        "Failed to copy {} to {}: {}",
+                                        path.display(),
+                                        dest.display(),
+                                        e
+                                    );
+                                }
                             }
                         }
                     }
                 }
             }
         }
+        // If build feature isn't enabled and no supplied lib dir was given, error out with actionable message.
+        #[cfg(not(feature = "build"))]
+        {
+            panic!("No valid path supplied (TFLITE_LIB_DIR or TFLITE_<ARCH>_LIB_DIR) and 'build' feature is not enabled. Set a lib dir or enable the 'build' feature to build from source.");
+        }
     }
 
+    // The script copies libs into OUT_DIR, so use OUT_DIR as the lib directory to link from.
     let lib_dir = out_dir.clone().to_str().expect("Unable to convert out_dir to str").to_string();
 
     let static_dynamic =
@@ -466,6 +469,7 @@ fn prepare_tensorflow_library() {
     println!("cargo:rustc-link-lib=dylib=pthread");
     println!("cargo:rustc-link-lib=dylib=dl");
 }
+
 
 // This generates "tflite_types.rs" containing structs and enums which are inter-operable with Glow.
 fn import_tflite_types() {

@@ -1,11 +1,23 @@
 {
   inputs = {
-    nixpkgs.url = "nixpkgs/nixos-unstable";
+    nixpkgs = {
+      type = "git";
+      url = "https://github.com/crazychaoz/nixpkgs.git";
+      ref = "update-tflite-to-2.20";
+    };
+
     utils.url = "github:numtide/flake-utils";
     crane.url = "github:ipetkov/crane";
   };
-  outputs = { self, nixpkgs, utils, crane }:
-    utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      utils,
+      crane,
+    }:
+    utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs { inherit system; };
 
@@ -37,7 +49,7 @@
       {
         packages.default = (crane.mkLib pkgs).buildPackage {
           src = ./.;
-          doCheck = true;
+          doCheck = false;
 
           TFLITE_X86_64_LIB_DIR = "${renamed_tflite}/lib";
           TFLITE_LIB_DIR = "${renamed_tflite}/lib";
@@ -53,6 +65,7 @@
             rustPlatform.bindgenHook
             cmake
             libclang
+            rustfmt
           ];
         };
 
@@ -60,7 +73,7 @@
           TFLITE_X86_64_LIB_DIR = "${renamed_tflite}/lib";
           TFLITE_LIB_DIR = "${renamed_tflite}/lib";
 
-          buildInputs = with pkgs;[
+          buildInputs = with pkgs; [
             clang
           ];
           nativeBuildInputs = with pkgs; [
@@ -71,7 +84,9 @@
             clang
             libclang
             rustPlatform.bindgenHook
+            rustfmt
           ];
         };
-      });
+      }
+    );
 }

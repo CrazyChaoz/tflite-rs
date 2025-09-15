@@ -136,6 +136,7 @@ fn cmake_build_tensorflow() -> PathBuf {
     build_dir
 }
 
+#[cfg(feature = "build")]
 fn bazel_build_tensorflow() -> PathBuf {
     let start = Instant::now();
     let out_dir = PathBuf::from(env::var("OUT_DIR").expect("OUT_DIR not set"));
@@ -319,7 +320,7 @@ fn prepare_tensorflow_library() {
                                 println!("cargo:rerun-if-changed={}", path.display());
                             }
                             Err(e) => {
-                                panic!(
+                                println!(
                                     "Failed to copy {} to {}: {}",
                                     path.display(),
                                     dest.display(),

@@ -17,17 +17,18 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1732014248,
-        "narHash": "sha256-y/MEyuJ5oBWrWAic/14LaIr/u5E0wRVzyYsouYY3W6w=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "23e89b7da85c3640bbc2173fe04f4bd114342367",
-        "type": "github"
+        "lastModified": 1757928283,
+        "narHash": "sha256-VE6gpV9SkPChdySf9cZbNYiVECR1Jz8RznDu1dg7PXc=",
+        "ref": "update-tflite-to-2.20",
+        "rev": "e31e303a75fbfc2f33db56a18dc605ad24bfac21",
+        "revCount": 856561,
+        "type": "git",
+        "url": "https://github.com/crazychaoz/nixpkgs.git"
       },
       "original": {
-        "id": "nixpkgs",
-        "ref": "nixos-unstable",
-        "type": "indirect"
+        "ref": "update-tflite-to-2.20",
+        "type": "git",
+        "url": "https://github.com/crazychaoz/nixpkgs.git"
       }
     },
     "root": {

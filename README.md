@@ -1,16 +1,16 @@
 [![Rust](https://github.com/CrazyChaoz/tflite-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/CrazyChaoz/tflite-rs/actions/workflows/rust.yml)
 
-# Rust bindings for TensorFlow Lite
+# Rust bindings for TensorFlow Lite (2.20.0)
 
 This crates provides TensorFlow Lite APIs.
 Please read the [`API documentation on docs.rs`](https://docs.rs/crate/tflite)
 
 # Compatibility
 
-This fork is only tested with 
-- a prebuilt `libtensorflowlite.so`
-- tensorflow `v2.13.0`
-- flatbuffers `v23.1.21`
+This fork is tested with 
+- tensorflow `v2.20.0`
+- a prebuilt `libtensorflow-lite.so` via `nixpkgs`
+- a bazel build of TensorFlow Lite via `build.rs`
 
 For a working example check out the nix devshell using `nix develop`
 

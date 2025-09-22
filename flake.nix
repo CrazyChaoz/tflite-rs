@@ -54,9 +54,8 @@
           TFLITE_X86_64_LIB_DIR = "${renamed_tflite}/lib";
           TFLITE_LIB_DIR = "${renamed_tflite}/lib";
 
-          buildInputs = with pkgs; [
-            renamed_tflite
-            vtk
+          buildInputs = [
+            pkgs.renamed_tflite
           ];
           nativeBuildInputs = with pkgs; [
             clang
@@ -73,8 +72,8 @@
           TFLITE_X86_64_LIB_DIR = "${renamed_tflite}/lib";
           TFLITE_LIB_DIR = "${renamed_tflite}/lib";
 
-          buildInputs = with pkgs; [
-            clang
+          buildInputs = [
+            pkgs.renamed_tflite
           ];
           nativeBuildInputs = with pkgs; [
             rustc

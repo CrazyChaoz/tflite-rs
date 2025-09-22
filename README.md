@@ -9,8 +9,10 @@ Please read the [`API documentation on docs.rs`](https://docs.rs/crate/tflite)
 
 This fork is tested with 
 - tensorflow `v2.20.0`
+
+And either of the following methods to provide the TensorFlow Lite library:
 - a prebuilt `libtensorflow-lite.so` via `nixpkgs`
-- a bazel build of TensorFlow Lite via `build.rs`
+- a `bazel` build of TensorFlow Lite via `build.rs`
 
 For a working example check out the nix devshell using `nix develop`
 

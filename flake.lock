@@ -17,16 +17,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1757928283,
-        "narHash": "sha256-VE6gpV9SkPChdySf9cZbNYiVECR1Jz8RznDu1dg7PXc=",
-        "ref": "update-tflite-to-2.20",
-        "rev": "e31e303a75fbfc2f33db56a18dc605ad24bfac21",
-        "revCount": 856561,
+        "lastModified": 1770302912,
+        "narHash": "sha256-unW7+TZeSDUCq81LMZR59K4a1p0aJrlJHNQDiUBWCDA=",
+        "ref": "update-tflite-rebase",
+        "rev": "7147c87d89de400bd8e3a306ebe503d366ff4df2",
+        "revCount": 940893,
         "type": "git",
         "url": "https://github.com/crazychaoz/nixpkgs.git"
       },
       "original": {
-        "ref": "update-tflite-to-2.20",
+        "ref": "update-tflite-rebase",
         "type": "git",
         "url": "https://github.com/crazychaoz/nixpkgs.git"
       }

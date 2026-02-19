@@ -1,8 +1,8 @@
 [submodule "submodules/tensorflow"]
 	path = submodules/tensorflow
 	url = https://github.com/tensorflow/tensorflow.git
-    tag = v2.13.0
+    tag = v2.20.0
 [submodule "submodules/flatbuffers"]
 	path = submodules/flatbuffers
 	url = https://github.com/google/flatbuffers.git
-	tag = v23.1.21
+	tag = v24.3.25

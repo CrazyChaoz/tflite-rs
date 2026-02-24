@@ -44,6 +44,7 @@ include = [
   "submodules/tensorflow/tensorflow/core/kernels/eigen_convolution_helpers.h",
   "submodules/tensorflow/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h",
   "submodules/tensorflow/tensorflow/core/public/version.h",
+  "submodules/tensorflow/tensorflow/compiler/mlir/lite/",
 ]
 
 [dependencies]

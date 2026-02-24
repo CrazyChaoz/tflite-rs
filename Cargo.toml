@@ -39,12 +39,13 @@ include = [
   "submodules/tensorflow/tensorflow/lite/*.h",
   "submodules/tensorflow/tensorflow/lite/tools/make",
   "submodules/tensorflow/tensorflow/lite/tools/optimize/sparsity/*.h",
+  "submodules/tensorflow/tensorflow/lite/internal/*.h",
   "submodules/tensorflow/third_party/eigen3",
   "submodules/tensorflow/third_party/fft2d",
   "submodules/tensorflow/tensorflow/core/kernels/eigen_convolution_helpers.h",
   "submodules/tensorflow/tensorflow/core/kernels/eigen_spatial_convolutions-inl.h",
   "submodules/tensorflow/tensorflow/core/public/version.h",
-  "submodules/tensorflow/tensorflow/compiler/mlir/lite/",
+  "submodules/tensorflow/tensorflow/compiler/mlir/lite",
 ]
 
 [dependencies]

@@ -25,6 +25,7 @@ include = [
   "submodules/tensorflow/tensorflow/lite/core",
   "submodules/tensorflow/tensorflow/lite/delegates/*.cc",
   "submodules/tensorflow/tensorflow/lite/delegates/*.h",
+  "submodules/tensorflow/tensorflow/lite/delegates/gpu/*.h", # for the `gpu` feature
   "submodules/tensorflow/tensorflow/lite/delegates/nnapi",
   "submodules/tensorflow/tensorflow/lite/experimental/acceleration",
   "submodules/tensorflow/tensorflow/lite/experimental/examples",

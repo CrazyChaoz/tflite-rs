@@ -1,6 +1,9 @@
 mod builder;
 pub mod context;
 mod fbmodel;
+// Declared unconditionally (and gated inside via `#![cfg]` in `gpu.rs`) so the
+// `cpp_build` build script can always find the module file on disk.
+pub mod gpu;
 pub mod op_resolver;
 pub mod ops;
 
@@ -37,7 +40,7 @@ where
     Op: OpResolver,
 {
     fn drop(&mut self) {
-        let handle = Box::into_raw(mem::replace(&mut self.handle,Box::new([0u64;67])));
+        let handle = Box::into_raw(mem::replace(&mut self.handle, Box::new([0u64; 67])));
         #[allow(clippy::forgetting_copy_types, clippy::useless_transmute, deprecated)]
         unsafe {
             cpp!([handle as "Interpreter*"] {
@@ -59,6 +62,11 @@ where
         use std::ops::DerefMut;
         self.handle.deref_mut()
     }
+    /// Wraps a created C++ interpreter handle.
+    ///
+    /// Tensors are **not** allocated by this method; call
+    /// [`Interpreter::allocate_tensors`] before reading or writing tensors
+    /// (see [`InterpreterBuilder::build`]).
     pub(crate) fn new(
         handle: *mut bindings::tflite::Interpreter,
         builder: InterpreterBuilder<'a, Op>,
@@ -67,14 +75,7 @@ where
             return Err(Error::internal_error("failed to create interpreter"));
         }
         let handle = unsafe { Box::from_raw(handle) };
-        let mut interpreter = Self { handle, _builder: builder };
-        // # Safety
-        // Always allocate tensors so we don't get into a state
-        // where we try to read from or write to unallocated memory
-        // without doing this it is possible to have undefined behavior
-        // outside of an unsafe block
-        interpreter.allocate_tensors()?;
-        Ok(interpreter)
+        Ok(Self { handle, _builder: builder })
     }
     /// Update allocations for all tensors. This will redim dependent tensors using
     /// the input tensor dimensionality as given. This is relatively expensive.

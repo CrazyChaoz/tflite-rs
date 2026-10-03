@@ -84,6 +84,43 @@ fn mobilenetv2_mnist() -> Result<()> {
 }
 ```
 
+### Offloading inference to the GPU
+
+The `gpu` feature adds a GPU delegate for offloading the supported parts of a
+model graph to the GPU (OpenCL/OpenGL backend). The delegate has to be
+applied **before** the tensors are allocated:
+
+```rust
+use tflite::gpu::{GpuDelegate, GpuDelegateOptions};
+use tflite::ops::builtin::BuiltinOpResolver;
+use tflite::{FlatBufferModel, InterpreterBuilder, Result};
+
+fn run_with_gpu(model: &FlatBufferModel) -> Result<()> {
+    let resolver = BuiltinOpResolver::default();
+
+    let delegate = GpuDelegate::new(&GpuDelegateOptions::default())?;
+
+    let builder = InterpreterBuilder::new(model, &resolver)?;
+    // build without allocating tensors so the delegate can be applied first
+    let mut interpreter = builder.build_unallocated()?;
+
+    // fails if no compatible GPU backend (e.g. OpenCL) is available
+    interpreter.modify_graph_with_delegate(&delegate)?;
+
+    interpreter.allocate_tensors()?;
+
+    // ... fill the inputs, then:
+    // interpreter.invoke()?;
+
+    // the delegate must outlive the interpreter
+    drop(interpreter);
+    Ok(())
+}
+```
+
+Note that `InterpreterBuilder::build()` still allocates the tensors
+immediately; use `build_unallocated()` whenever you apply a delegate.
+
 ### Using the FlatBuffers model APIs
 
 This crate also provides a limited set of FlatBuffers model APIs.

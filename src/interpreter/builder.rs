@@ -65,7 +65,41 @@ where
         Ok(Self { handle, _model: model, _resolver: resolver })
     }
 
+    /// Builds the interpreter and allocates all tensors.
+    ///
+    /// This is equivalent to calling [`Self::build_unallocated`] followed
+    /// by [`Interpreter::allocate_tensors`].
     pub fn build(mut self) -> Result<Interpreter<'a, Op>> {
+        let handle = self.build_handle("failed to build")?;
+        let mut interpreter = Interpreter::new(handle, self)?;
+        interpreter.allocate_tensors()?;
+        Ok(interpreter)
+    }
+
+    /// Builds the interpreter, using the given number of threads, and
+    /// allocates all tensors.
+    pub fn build_with_threads(
+        mut self,
+        threads: std::os::raw::c_int,
+    ) -> Result<Interpreter<'a, Op>> {
+        let handle = self.build_handle_with_threads(threads, "failed to build with threads")?;
+        let mut interpreter = Interpreter::new(handle, self)?;
+        interpreter.allocate_tensors()?;
+        Ok(interpreter)
+    }
+
+    /// Builds the interpreter **without** allocating its tensors.
+    ///
+    /// Use this when a delegate (e.g. the GPU delegate from
+    /// [`crate::gpu`]) has to be applied before the tensors are allocated.
+    /// Call [`Interpreter::allocate_tensors`] before reading or writing
+    /// tensors.
+    pub fn build_unallocated(mut self) -> Result<Interpreter<'a, Op>> {
+        let handle = self.build_handle("failed to build")?;
+        Interpreter::new(handle, self)
+    }
+
+    fn build_handle(&mut self, error: &str) -> Result<*mut bindings::Interpreter> {
         #[allow(clippy::forgetting_copy_types, deprecated)]
         let handle = {
             let builder = &mut *self.handle;
@@ -78,15 +112,16 @@ where
             }
         };
         if handle.is_null() {
-            return Err(Error::InternalError("failed to build".to_string()));
+            return Err(Error::internal_error(error));
         }
-        Interpreter::new(handle, self)
+        Ok(handle)
     }
 
-    pub fn build_with_threads(
-        mut self,
+    fn build_handle_with_threads(
+        &mut self,
         threads: std::os::raw::c_int,
-    ) -> Result<Interpreter<'a, Op>> {
+        error: &str,
+    ) -> Result<*mut bindings::Interpreter> {
         #[allow(clippy::forgetting_copy_types, deprecated)]
         let handle = {
             let builder = &mut *self.handle;
@@ -100,8 +135,8 @@ where
             }
         };
         if handle.is_null() {
-            return Err(Error::InternalError("failed to build with threads".to_string()));
+            return Err(Error::internal_error(error));
         }
-        Interpreter::new(handle, self)
+        Ok(handle)
     }
 }

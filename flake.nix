@@ -45,9 +45,8 @@
         #     fi
         #   '';
         # };
-      in
-      {
-        packages.default = (crane.mkLib pkgs).buildPackage {
+        # common arguments for building the crate with crane
+        basePackage = extraArgs: (crane.mkLib pkgs).buildPackage ({
           src = ./.;
           doCheck = false;
 
@@ -66,6 +65,25 @@
             libclang
             rustfmt
           ];
+        } // extraArgs);
+      in
+      {
+        packages.default = basePackage { };
+
+        # Build with the `gpu` feature and run the tests, including the GPU
+        # delegate tests in tests/gpu_test.rs.
+        packages.gpu = basePackage {
+          doCheck = true;
+          cargoBuildExtraArgs = "--features gpu";
+          # --lib --tests: skip doctests, rustdoc picks up C header comments from the generated bindings
+          cargoTestExtraArgs = "--features gpu --lib --tests";
+          # Test binaries link libtensorflow-lite.so, which leaves abseil's
+          # logging symbols unresolved.
+          buildInputs = [
+            pkgs.tensorflow-lite
+            pkgs.abseil-cpp
+          ];
+          RUSTFLAGS = "-C link-arg=-labsl_log_internal_message -C link-arg=-labsl_log_internal_nullguard";
         };
 
         devShell = pkgs.mkShell {

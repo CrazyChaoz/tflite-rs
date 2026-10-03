@@ -264,11 +264,9 @@ fn prepare_tensorflow_library() {
 
     // If the user supplied a lib dir, prefer it unconditionally (whether `build` feature is enabled or not).
     if let Some(supplied) = supplied_lib_dir.clone() {
-        let src = PathBuf::from(supplied.clone())
-            .canonicalize()
-            .expect(&format!(
-                "Unable to canoncalize supplied TensorFlow Lite lib dir {supplied:?}"
-            ));
+        let src = PathBuf::from(supplied.clone()).canonicalize().expect(&format!(
+            "Unable to canoncalize supplied TensorFlow Lite lib dir {supplied:?}"
+        ));
         lib_dir = Some(src.as_os_str().to_string_lossy().to_string());
 
         // Copy any .so and .a files from the supplied lib_dir to out_dir
@@ -341,7 +339,8 @@ fn prepare_tensorflow_library() {
                 let start = Instant::now();
                 let bazel = true;
 
-                let build_dir = if bazel { bazel_build_tensorflow() } else { cmake_build_tensorflow() };
+                let build_dir =
+                    if bazel { bazel_build_tensorflow() } else { cmake_build_tensorflow() };
                 // let build_dir = cmake_build_tensorflow();
                 lib_dir = Some(build_dir.clone().to_str().unwrap().to_string());
                 // Locate built primary lib
@@ -356,7 +355,10 @@ fn prepare_tensorflow_library() {
                 };
 
                 let built = candidates.iter().find(|p| p.exists()).cloned().unwrap_or_else(|| {
-                    panic!("Unable to find built TensorFlow Lite library in {}", build_dir.display())
+                    panic!(
+                        "Unable to find built TensorFlow Lite library in {}",
+                        build_dir.display()
+                    )
                 });
                 std::fs::copy(&built, &final_lib)
                     .unwrap_or_else(|e| panic!("Copy library failed: {e}"));
@@ -470,7 +472,6 @@ fn prepare_tensorflow_library() {
     println!("cargo:rustc-link-lib=dylib=dl");
 }
 
-
 // This generates "tflite_types.rs" containing structs and enums which are inter-operable with Glow.
 fn import_tflite_types() {
     use bindgen::*;
@@ -502,6 +503,9 @@ fn import_tflite_types() {
         .allowlist_type("tflite::OpResolver")
         .opaque_type("tflite::OpResolver")
         .allowlist_type("TfLiteTensor")
+        // for the gpu delegate (feature "gpu")
+        .allowlist_type("^TfLiteDelegate$")
+        .opaque_type("^TfLiteDelegate$")
         .opaque_type("std::string")
         .opaque_type("std::basic_string.*")
         .opaque_type("std::map.*")

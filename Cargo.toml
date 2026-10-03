@@ -67,6 +67,8 @@ default = ["build"]
 debug_tflite = ["build"]                      
 generate_model_apis = ["bart", "bart_derive"]
 no_micro = ["build"]
+# GPU delegate support; requires a TensorFlow Lite library built with GPU
+# delegate support (e.g. the nixpkgs `tensorflow-lite` package)
 gpu = []
 
 [package.metadata.docs.rs]
